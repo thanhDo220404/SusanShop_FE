@@ -1,187 +1,140 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { api } from "@/lib/api";
+
+function getChildren(cats, parentId) {
+  return cats.filter((c) => {
+    const pId = c.parent_category_id?._id || c.parent_category_id;
+    return String(pId) === String(parentId);
+  });
+}
+
+function buildTree(cats) {
+  const roots = cats.filter((c) => !c.parent_category_id);
+  return roots.map((root) => ({
+    ...root,
+    children: getChildren(cats, root._id).map((child) => ({
+      ...child,
+      children: getChildren(cats, child._id),
+    })),
+  }));
+}
+
+function CategoryColumn({ cat }) {
+  const hasGrandchildren = cat.children && cat.children.length > 0;
+  return (
+    <div style={{ minWidth: 160 }}>
+      <h6 className="text-uppercase fw-bold" style={{ fontSize: "0.8rem" }}>
+        <Link href={`/danh-muc/${cat.slug}`} className="title">
+          {cat.name} <i className="bi bi-arrow-right"></i>
+        </Link>
+      </h6>
+      <ul className="p-0">
+        <li>
+          <Link href={`/danh-muc/${cat.slug}`} className="fw-semibold">
+            Tất cả
+          </Link>
+        </li>
+        {hasGrandchildren
+          ? cat.children.map((grandChild) => (
+              <li key={grandChild._id}>
+                <Link href={`/danh-muc/${grandChild.slug}`}>
+                  {grandChild.name}
+                </Link>
+              </li>
+            ))
+          : null}
+      </ul>
+    </div>
+  );
+}
 
 export default function Navbar() {
-  const [top_man, setTop_man] = useState([
-    "Áo Tanktop",
-    "Áo thun",
-    "Áo Thể Thao",
-    "Áo Polo",
-    "Áo Sơ Mi",
-    "Áo Dài Tay",
-    "Áo Sweater",
-    "Áo Khoác",
-    "Áo thun Graphic",
-  ]);
-  const [bottom_man, setBottom_man] = useState([
-    "Quần Short",
-    "Quần Jogger",
-    "Quần Thể Thao",
-    "Quần Dài",
-    "Quần Pants",
-    "Quần Jean",
-    "Quần Kaki",
-    "Đồ Bơi Nam",
-  ]);
-  const [underwear_man, setUnderwear_man] = useState([
-    "Brief (Tam giác)",
-    "Trunk (Boxer)",
-    "Boxer Brief (Boxer dài)",
-    "Long Leg",
-  ]);
-  const [accessories_man, setAccessories_man] = useState([
-    "Dây chuyền",
-    "Nhẫn",
-    "Vòng tay",
-    "Bông tai",
-    "Thép không gỉ",
-  ]);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    async function fetchCats() {
+      try {
+        const data = await api.categories.getAll();
+        setCategories(data.filter((c) => c.status));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchCats();
+  }, []);
+
+  const tree = buildTree(categories);
+
+  if (tree.length === 0) return null;
+
   return (
     <nav className="navbar py-0 d-none d-lg-block position-static flex-grow-1">
-      <ul className="m-0 p-0 d-flex justify-content-center gap-4">
+      <ul className="d-flex justify-content-center gap-1">
         <li>
-          <a href="" className="d-block text-primary">
-            New
-          </a>
-          <div className="submenu p-5">
-            <div className="d-flex justify-content-between">
-              <div className="d-flex gap-5">
-                <div>
-                  <h6 className="text-uppercase fw-bold">
-                    <a href="" className="title">
-                      Tất cả sản phẩm{" "}
-                      <i className="bi bi-arrow-right text-primary"></i>
-                    </a>
-                  </h6>
-                  <ul className="p-0">
-                    <li>
-                      <a href="" className="fw-bold text-primary">
-                        Sản phẩm mới
-                      </a>
-                    </li>
-                    <li>
-                      <a href="" className="fw-bold">
-                        Bán chạy nhất
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-                <div>
-                  <h6 className="text-uppercase fw-bold">
-                    <a href="" className="title">
-                      Áo Nam <i className="bi bi-arrow-right text-primary"></i>
-                    </a>
-                  </h6>
-                  <ul className="p-0">
-                    <li>
-                      <a href="">Tất cả</a>
-                    </li>
-                    {top_man.map((item, index) => (
-                      <li key={index}>
-                        <a href="" key={index}>
-                          {item}
-                        </a>
-                      </li>
+          <Link href="/san-pham">
+            <span className="badge bg-danger me-1" style={{ fontSize: "0.6rem", verticalAlign: "middle" }}>
+              HOT
+            </span>
+            Mới về
+          </Link>
+        </li>
+
+        {tree.map((cat) => {
+          const hasChildren = cat.children && cat.children.length > 0;
+          if (hasChildren) {
+            return (
+              <li key={cat._id}>
+                <Link href={`/danh-muc/${cat.slug}`}>
+                  {cat.name}
+                </Link>
+                <div className="submenu">
+                  <div className="d-flex gap-5 flex-wrap">
+                    <div style={{ minWidth: 160 }}>
+                      <h6 className="text-uppercase fw-bold" style={{ fontSize: "0.8rem" }}>
+                        <Link href="/san-pham" className="title">
+                          Khám phá <i className="bi bi-arrow-right"></i>
+                        </Link>
+                      </h6>
+                      <ul className="p-0">
+                        <li>
+                          <Link
+                            href="/san-pham"
+                            className="fw-bold"
+                            style={{ color: "#0d6efd" }}
+                          >
+                            Sản phẩm mới
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/san-pham" className="fw-bold">
+                            Bán chạy nhất
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/san-pham" className="fw-bold">
+                            Khuyến mãi
+                          </Link>
+                        </li>
+                      </ul>
+                    </div>
+                    {cat.children.map((child) => (
+                      <CategoryColumn key={child._id} cat={child} />
                     ))}
-                  </ul>
+                  </div>
                 </div>
-                <div>
-                  <h6 className="text-uppercase fw-bold">
-                    <a href="" className="title">
-                      Quần Nam{" "}
-                      <i className="bi bi-arrow-right text-primary"></i>
-                    </a>
-                  </h6>
-                  <ul className="p-0">
-                    <li>
-                      <a href="">Tất cả</a>
-                    </li>
-                    {bottom_man.map((item, index) => (
-                      <li key={index}>
-                        <a href="" key={index}>
-                          {item}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h6 className="text-uppercase fw-bold">
-                    <a href="" className="title">
-                      Quần Lót Nam{" "}
-                      <i className="bi bi-arrow-right text-primary"></i>
-                    </a>
-                  </h6>
-                  <ul className="p-0">
-                    <li>
-                      <a href="">Tất cả</a>
-                    </li>
-                    {underwear_man.map((item, index) => (
-                      <li key={index}>
-                        <a href="" key={index}>
-                          {item}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h6 className="text-uppercase fw-bold">
-                    <a href="" className="title">
-                      PHụ kiện Nam{" "}
-                      <i className="bi bi-arrow-right text-primary"></i>
-                    </a>
-                  </h6>
-                  <ul className="p-0">
-                    <li>
-                      <a href="">Tất cả</a>
-                    </li>
-                    {accessories_man.map((item, index) => (
-                      <li key={index}>
-                        <a href="" key={index}>
-                          {item}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              <div className="vr"></div>
-              <div className="d-flex gap-3 flex-column">
-                <img
-                  src="https://n7media.coolmate.me/uploads/2026/03/25/FIFA_MASTERBannerMenu-1.jpg"
-                  alt="Hình"
-                  width={300}
-                />
-                <img
-                  src="https://n7media.coolmate.me/uploads/2026/12/26/picknamdt_51.jpg"
-                  alt="Hình"
-                  width={300}
-                />
-              </div>
-            </div>
-          </div>
-        </li>
-        <li>
-          <a href="" className="d-block ">
-            Nam
-          </a>
-        </li>
-        <li>
-          <a href="" className="d-block text-decoration-none">
-            Nữ
-          </a>
-        </li>
-        <li>
-          <a href="" className="d-block text-decoration-none">
-            Thể thao
-          </a>
-        </li>
-        <li>
-          <a href="" className="d-block text-decoration-none">
-            Phụ kiện
-          </a>
-        </li>
+              </li>
+            );
+          }
+          return (
+            <li key={cat._id}>
+              <Link href={`/danh-muc/${cat.slug}`}>
+                {cat.name}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );

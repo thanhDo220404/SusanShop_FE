@@ -2,10 +2,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import { AuthProvider } from "@/contexts/auth";
-import { CartProvider } from "@/contexts/cart";
-import Header from "@/app/components/header";
-import Footer from "../components/footer";
+import Sidebar from "./components/Sidebar";
+import AdminGuard from "./components/AdminGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,21 +16,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Susan Shop",
-  description: "Susan Shop description",
+  title: "Dashboard",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <AuthProvider>
-          <CartProvider>
-            <Header />
-            {children}
-            <Footer />
-          </CartProvider>
-        </AuthProvider>
+        <AdminGuard>
+          <div className="d-flex">
+            <Sidebar />
+            <main className="flex-grow-1 p-4" style={{ overflowX: "auto" }}>
+              {children}
+            </main>
+          </div>
+        </AdminGuard>
       </body>
     </html>
   );

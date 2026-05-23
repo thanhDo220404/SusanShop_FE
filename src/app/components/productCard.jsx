@@ -1,60 +1,86 @@
-export default function ProductCard() {
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-  const colors = ["#ffffff", "#1f2233", "#183b73"];
+"use client";
+import Link from "next/link";
 
-  return (
-    <div className="product-card position-relative overflow-hidden">
-      {/* Badge */}
-      <span className="best-seller">BÁN CHẠY</span>
+function formatPrice(n) {
+  return n != null ? n.toLocaleString("vi-VN") + "d" : "";
+}
 
-      {/* Image */}
-      <div className="image-wrapper position-relative">
-        <a href="" className="position-absolute d-block w-100 h-100"></a>
-        <img
-          src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b"
-          alt="product"
-          className="product-image"
-          width={100}
-        />
-        {/* Hover Overlay */}
-        <div className="quick-add">
-          <h6 className="fw-semibold mb-3 text-light">
-            Thêm nhanh vào giỏ hàng +
-          </h6>
-
-          <div className="d-flex flex-wrap gap-2 justify-content-center">
-            {sizes.map((size) => (
-              <button key={size} className="size-btn">
-                {size}
-              </button>
-            ))}
+export default function ProductCard({ product }) {
+  if (!product) {
+    return (
+      <div className="product-card position-relative overflow-hidden">
+        <div className="image-wrapper position-relative">
+          <div className="product-image bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center">
+            <div className="spinner-border text-secondary" role="status" />
+          </div>
+        </div>
+        <div className="mt-3">
+          <div className="placeholder-glow">
+            <span className="placeholder col-10"></span>
+            <span className="placeholder col-6 mt-2"></span>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Color */}
-      <div className="d-flex gap-2 mt-3">
-        {colors.map((color, index) => (
-          <button
-            key={index}
-            className={`color-btn ${index === 0 ? "color-btn-active" : ""}`}
-            style={{ backgroundColor: color }}
-          ></button>
-        ))}
+  const firstImage = product.images?.[0];
+  const imageUrl =
+    firstImage?.url ||
+    firstImage?.secure_url ||
+    "https://res.cloudinary.com/duhmqsywm/image/upload/v1779262540/3694bd21-b0bd-4e47-83ed-58825dfe3771.png";
+
+  const variants = product.variants || [];
+  const basePrice = variants[0]?.price;
+  const discount = variants[0]?.discount || 0;
+  const salePrice =
+    basePrice && discount ? basePrice * (1 - discount / 100) : basePrice;
+
+  const sizes = [
+    ...new Set(
+      variants.map((v) => v.size_id?.name || v.size_id).filter(Boolean),
+    ),
+  ];
+  const colors = variants
+    .filter((v) => v.color_id)
+    .map((v) => ({
+      hex: v.color_id?.hex || v.color_id,
+      name: v.color_id?.name || v.color_id,
+    }));
+  const uniqueColors = colors.filter(
+    (c, i, arr) => arr.findIndex((x) => x.hex === c.hex) === i,
+  );
+
+  const slug = product.slug || "";
+
+  return (
+    <div className="product-card position-relative overflow-hidden">
+      {product.features && <span className="best-seller">NỔI BẬT</span>}
+
+      <div className="image-wrapper position-relative">
+        <Link
+          href={`/san-pham/${slug}`}
+          className="position-absolute d-block w-100 h-100"
+        />
+        <img
+          src={imageUrl}
+          alt={product.name}
+          className="product-image"
+          loading="lazy"
+        />
       </div>
-
-      {/* Info */}
       <div className="mt-3">
         <h5 className="product-title">
-          <a href="#">Váy thun Knit Aline Pickleball Driveshot Essentials</a>
+          <Link href={`/san-pham/${slug}`}>{product.name}</Link>
         </h5>
-
         <div className="d-flex align-items-center gap-2 mt-2 flex-wrap">
-          <span className="product-price">295.000đ</span>
-
-          <span className="discount-badge">-50%</span>
-
-          <span className="old-price">590.000đ</span>
+          {salePrice != null && (
+            <span className="product-price">{formatPrice(salePrice)}</span>
+          )}
+          {discount > 0 && <span className="discount-badge">-{discount}%</span>}
+          {discount > 0 && basePrice != null && (
+            <span className="old-price">{formatPrice(basePrice)}</span>
+          )}
         </div>
       </div>
     </div>

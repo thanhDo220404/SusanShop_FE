@@ -1,0 +1,44 @@
+.sidebar {
+  min-height: 100vh;
+}
+
+.nav-link.active {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.table th {
+  white-space: nowrap;
+}
+
+.btn-action {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.color-swatch {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  vertical-align: middle;
+}
+
+.media-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 0.25em 0.5em;
+}
+
+.modal-backdrop {
+  z-index: 1040;
+}
+.modal {
+  z-index: 1050;
+}
