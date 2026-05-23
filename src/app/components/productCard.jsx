@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 function formatPrice(n) {
-  return n != null ? n.toLocaleString("vi-VN") + "d" : "";
+  return n != null ? n.toLocaleString("vi-VN") + " đ" : "";
 }
 
 export default function ProductCard({ product }) {

@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 import { useCart } from "@/contexts/cart";
 
 function formatPrice(n) {
-  return n != null ? n.toLocaleString("vi-VN") + "d" : "";
+  return n != null ? n.toLocaleString("vi-VN") + " đ" : "";
 }
 
 export default function ProductDetailPage() {
@@ -374,46 +374,76 @@ export default function ProductDetailPage() {
 
           <div className="mb-4">
             <h6 className="fw-bold mb-2">So luong</h6>
-            <div
-              className="d-inline-flex align-items-center border rounded-pill overflow-hidden"
-              style={{ minWidth: 140 }}
-            >
-              <button
-                className="btn btn-sm border-0 rounded-0 px-3"
-                onClick={() => {
-                  const num = clampQuantity(quantity - 1);
-                  setQuantity(num);
-                  setInputValue(String(num));
-                }}
-                disabled={quantity <= 1}
+            <div className="d-flex align-items-center gap-3 flex-wrap">
+              <div
+                className="d-inline-flex align-items-center border rounded-pill overflow-hidden"
+                style={{ minWidth: 140 }}
               >
-                <i className="bi bi-dash"></i>
-              </button>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={inputValue}
-                onChange={handleQuantityInput}
-                onBlur={handleQuantityBlur}
-                onKeyDown={handleQuantityKeyDown}
-                className="form-control-plaintext text-center fw-bold border-0 px-0"
+                <button
+                  className="btn btn-sm border-0 rounded-0 px-3"
+                  onClick={() => {
+                    const num = clampQuantity(quantity - 1);
+                    setQuantity(num);
+                    setInputValue(String(num));
+                  }}
+                  disabled={quantity <= 1}
+                >
+                  <i className="bi bi-dash"></i>
+                </button>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={inputValue}
+                  onChange={handleQuantityInput}
+                  onBlur={handleQuantityBlur}
+                  onKeyDown={handleQuantityKeyDown}
+                  className="form-control-plaintext text-center fw-bold border-0 px-0"
+                  style={{
+                    width: 52,
+                    outline: "none",
+                    boxShadow: "none",
+                    background: "transparent",
+                  }}
+                />
+                <button
+                  className="btn btn-sm border-0 rounded-0 px-3"
+                  onClick={() => {
+                    const num = clampQuantity(quantity + 1);
+                    setQuantity(num);
+                    setInputValue(String(num));
+                  }}
+                  disabled={currentStock > 0 && quantity >= currentStock}
+                >
+                  <i className="bi bi-plus"></i>
+                </button>
+              </div>
+
+              <button
+                className="btn btn-dark rounded-pill px-4"
                 style={{
-                  width: 52,
-                  outline: "none",
-                  boxShadow: "none",
-                  background: "transparent",
+                  background: "linear-gradient(135deg, #1a1a1a, #333)",
+                  border: "none",
+                  transition: "all 0.3s ease",
+                  fontWeight: 700,
+                  letterSpacing: "0.5px",
                 }}
-              />
-              <button
-                className="btn btn-sm border-0 rounded-0 px-3"
-                onClick={() => {
-                  const num = clampQuantity(quantity + 1);
-                  setQuantity(num);
-                  setInputValue(String(num));
+                onClick={handleAddToCart}
+                disabled={!inStock}
+                onMouseEnter={(e) => {
+                  e.target.style.background =
+                    "linear-gradient(135deg, #0d6efd, #6610f2)";
+                  e.target.style.transform = "translateY(-2px)";
+                  e.target.style.boxShadow = "0 8px 25px rgba(13,110,253,0.35)";
                 }}
-                disabled={currentStock > 0 && quantity >= currentStock}
+                onMouseLeave={(e) => {
+                  e.target.style.background =
+                    "linear-gradient(135deg, #1a1a1a, #333)";
+                  e.target.style.transform = "translateY(0)";
+                  e.target.style.boxShadow = "none";
+                }}
               >
-                <i className="bi bi-plus"></i>
+                <i className="bi bi-cart-plus me-2"></i>
+                {inStock ? "THEM VAO GIO HANG" : "HET HANG"}
               </button>
             </div>
             <div className="mt-2">
@@ -436,36 +466,6 @@ export default function ProductDetailPage() {
                 </small>
               )}
             </div>
-          </div>
-
-          <div className="d-flex gap-3 mb-4">
-            <button
-              className="btn btn-dark btn-lg rounded-pill px-5 py-3"
-              style={{
-                background: "linear-gradient(135deg, #1a1a1a, #333)",
-                border: "none",
-                transition: "all 0.3s ease",
-                fontWeight: 700,
-                letterSpacing: "0.5px",
-              }}
-              onClick={handleAddToCart}
-              disabled={!inStock}
-              onMouseEnter={(e) => {
-                e.target.style.background =
-                  "linear-gradient(135deg, #0d6efd, #6610f2)";
-                e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = "0 8px 25px rgba(13,110,253,0.35)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background =
-                  "linear-gradient(135deg, #1a1a1a, #333)";
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "none";
-              }}
-            >
-              <i className="bi bi-cart-plus me-2"></i>
-              {inStock ? "THEM VAO GIO HANG" : "HET HANG"}
-            </button>
           </div>
 
           {addedMsg && (

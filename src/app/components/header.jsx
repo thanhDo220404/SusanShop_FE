@@ -48,7 +48,7 @@ export default function Header() {
 
             <div className="d-flex gap-1 gap-lg-2 align-items-center">
               <div
-                className="position-relative"
+                className="d-none d-lg-block position-relative"
                 onMouseEnter={() => {
                   if (userTimer.current) clearTimeout(userTimer.current);
                   setUserOpen(true);
