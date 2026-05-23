@@ -168,7 +168,7 @@ export default function CategoryPage() {
           <p className="mt-2 text-muted">Chua co san pham trong danh muc nay</p>
         </div>
       ) : (
-        <div className="d-flex flex-wrap gap-4 justify-content-center">
+        <div className="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
           {displayProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}

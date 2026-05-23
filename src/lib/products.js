@@ -1,4 +1,4 @@
-const EXPAND_THRESHOLD = 6;
+const EXPAND_THRESHOLD = 12;
 
 export function expandProductsByColor(products) {
   if (!products || products.length === 0) return [];

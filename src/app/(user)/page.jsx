@@ -56,7 +56,7 @@ export default function HomePage() {
               Xem them -
             </Link>
           </div>
-          <div className="d-flex flex-wrap gap-4 justify-content-center">
+          <div className="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
             {featured.slice(0, 8).map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}

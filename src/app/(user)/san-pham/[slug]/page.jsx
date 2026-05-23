@@ -614,7 +614,7 @@ function RelatedProducts({ currentId, categoryId }) {
   return (
     <div className="mt-5">
       <h3 className="fw-bold mb-4">San pham lien quan</h3>
-      <div className="d-flex flex-wrap gap-4 justify-content-center">
+      <div className="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
         {related.map((p) => (
           <ProductCard key={p._id} product={p} />
         ))}
