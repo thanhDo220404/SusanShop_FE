@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/app/components/productCard";
 import { api } from "@/lib/api";
+import { expandProductsByColor } from "@/lib/products";
 
 export default function CategoryPage() {
   const params = useParams();
@@ -74,15 +75,25 @@ export default function CategoryPage() {
     if (slug) fetchData();
   }, [slug]);
 
-  const sorted = [...products].sort((a, b) => {
-    if (sortBy === "price-asc") {
-      return (a.variants?.[0]?.price || 0) - (b.variants?.[0]?.price || 0);
-    }
-    if (sortBy === "price-desc") {
-      return (b.variants?.[0]?.price || 0) - (a.variants?.[0]?.price || 0);
-    }
-    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-  });
+  const sorted = [...products];
+
+  const getEffectivePrice = (p) => {
+    const v = p.variants?.[0];
+    return v ? v.price * (1 - (v.discount || 0) / 100) : 0;
+  };
+
+  const displayProducts = expandProductsByColor(sorted);
+  console.log(displayProducts);
+
+  if (sortBy === "price-asc") {
+    displayProducts.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
+  } else if (sortBy === "price-desc") {
+    displayProducts.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
+  } else {
+    displayProducts.sort(
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+    );
+  }
 
   if (loading) {
     return (
@@ -152,14 +163,14 @@ export default function CategoryPage() {
         </select>
       </div>
 
-      {sorted.length === 0 ? (
+      {displayProducts.length === 0 ? (
         <div className="text-center py-5">
           <i className="bi bi-inbox fs-1 text-muted"></i>
           <p className="mt-2 text-muted">Chua co san pham trong danh muc nay</p>
         </div>
       ) : (
         <div className="d-flex flex-wrap gap-4 justify-content-center">
-          {sorted.map((product) => (
+          {displayProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
         </div>

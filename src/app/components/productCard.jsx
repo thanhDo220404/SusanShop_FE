@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import Link from "next/link";
 
@@ -36,22 +37,10 @@ export default function ProductCard({ product }) {
   const salePrice =
     basePrice && discount ? basePrice * (1 - discount / 100) : basePrice;
 
-  const sizes = [
-    ...new Set(
-      variants.map((v) => v.size_id?.name || v.size_id).filter(Boolean),
-    ),
-  ];
-  const colors = variants
-    .filter((v) => v.color_id)
-    .map((v) => ({
-      hex: v.color_id?.hex || v.color_id,
-      name: v.color_id?.name || v.color_id,
-    }));
-  const uniqueColors = colors.filter(
-    (c, i, arr) => arr.findIndex((x) => x.hex === c.hex) === i,
-  );
-
   const slug = product.slug || "";
+  const displayName = product._colorLabel
+    ? `${product.name} - ${product._colorLabel}`
+    : product.name;
 
   return (
     <div className="product-card position-relative overflow-hidden">
@@ -64,14 +53,14 @@ export default function ProductCard({ product }) {
         />
         <img
           src={imageUrl}
-          alt={product.name}
+          alt={displayName}
           className="product-image"
           loading="lazy"
         />
       </div>
       <div className="mt-3">
-        <h5 className="product-title">
-          <Link href={`/san-pham/${slug}`}>{product.name}</Link>
+        <h5 className="product-title d-inline">
+          <Link href={`/san-pham/${slug}`}>{displayName}</Link>
         </h5>
         <div className="d-flex align-items-center gap-2 mt-2 flex-wrap">
           {salePrice != null && (

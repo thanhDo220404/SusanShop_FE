@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import ProductCard from "@/app/components/productCard";
 import { api } from "@/lib/api";
+import { expandProductsByColor } from "@/lib/products";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -47,19 +48,23 @@ export default function ProductsPage() {
       })
     : [...products];
 
-  filtered.sort((a, b) => {
-    if (sortBy === "price-asc") {
-      const priceA = a.variants?.[0]?.price || 0;
-      const priceB = b.variants?.[0]?.price || 0;
-      return priceA - priceB;
-    }
-    if (sortBy === "price-desc") {
-      const priceA = a.variants?.[0]?.price || 0;
-      const priceB = b.variants?.[0]?.price || 0;
-      return priceB - priceA;
-    }
-    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-  });
+  const getEffectivePrice = (p) => {
+    const v = p.variants?.[0];
+    return v ? v.price * (1 - (v.discount || 0) / 100) : 0;
+  };
+
+  const displayProducts = expandProductsByColor(filtered);
+  console.log("displayProducts: ", displayProducts);
+
+  if (sortBy === "price-asc") {
+    displayProducts.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
+  } else if (sortBy === "price-desc") {
+    displayProducts.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
+  } else {
+    displayProducts.sort(
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+    );
+  }
 
   return (
     <>
@@ -99,14 +104,14 @@ export default function ProductsPage() {
             <div className="spinner-border text-primary" role="status" />
             <p className="mt-2 text-muted">Dang tai...</p>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : displayProducts.length === 0 ? (
           <div className="text-center py-5">
             <i className="bi bi-inbox fs-1 text-muted"></i>
             <p className="mt-2 text-muted">Khong co san pham nao</p>
           </div>
         ) : (
           <div className="d-flex flex-wrap gap-4 justify-content-center">
-            {filtered.map((product) => (
+            {displayProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}
           </div>

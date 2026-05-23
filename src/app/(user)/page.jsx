@@ -4,6 +4,7 @@ import Banner from "../components/banner";
 import ProductCard from "../components/productCard";
 import ProductSlider from "../components/productSliders";
 import { api } from "@/lib/api";
+import { expandProductsByColor } from "@/lib/products";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -29,13 +30,16 @@ export default function HomePage() {
           }),
         }));
         setAllProducts(productsWithVariants);
-        setFeatured(productsWithVariants.filter((p) => p.features));
+        const featuredRaw = productsWithVariants.filter((p) => p.features);
+        setFeatured(expandProductsByColor(featuredRaw));
       } catch (err) {
         console.error("Failed to load products:", err);
       }
     }
     fetchData();
   }, []);
+
+  const displayProducts = expandProductsByColor(allProducts);
 
   return (
     <>
@@ -60,11 +64,11 @@ export default function HomePage() {
         </div>
       )}
 
-      {allProducts.length > 0 && (
+      {displayProducts.length > 0 && (
         <ProductSlider
           title="San pham noi bat"
           link="/san-pham"
-          products={allProducts.slice(0, 12)}
+          products={displayProducts.slice(0, 12)}
           renderItem={(item) => <ProductCard product={item} />}
         />
       )}
