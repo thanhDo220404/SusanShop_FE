@@ -42,7 +42,10 @@ export default function Header() {
 
             <Navbar />
 
-            <div className="d-flex flex-grow-1 justify-content-center" style={{ maxWidth: 360 }}>
+            <div
+              className="d-flex flex-grow-1 justify-content-center"
+              style={{ maxWidth: 360 }}
+            >
               <SearchBar />
             </div>
 

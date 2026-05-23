@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -119,6 +120,7 @@ export default function MobileMenu({ open, onClose, user, logout }) {
                       <Link
                         href={`/danh-muc/${child.slug}`}
                         onClick={onClose}
+                        className="d-block"
                         style={{ padding: "10px 0", fontWeight: 500 }}
                       >
                         {child.name}
@@ -130,7 +132,7 @@ export default function MobileMenu({ open, onClose, user, logout }) {
                               key={gc._id}
                               href={`/danh-muc/${gc.slug}`}
                               onClick={onClose}
-                              className="mobile-sub"
+                              className="mobile-sub d-block"
                               style={{ padding: "6px 0" }}
                             >
                               {gc.name}
