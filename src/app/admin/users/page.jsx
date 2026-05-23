@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import ConfirmModal from "../components/ConfirmModal";
+import DropdownSelect from "../components/DropdownSelect";
 
 const empty = { name: "", email: "", pass: "", phone: "", role: 0 };
 
@@ -120,7 +122,9 @@ export default function UsersPage() {
                 <td>{item.email}</td>
                 <td>{item.phone || "-"}</td>
                 <td>
-                  <span className={`badge ${item.role === 1 ? "bg-warning" : "bg-secondary"}`}>
+                  <span
+                    className={`badge ${item.role === 1 ? "bg-warning" : "bg-secondary"}`}
+                  >
                     {item.role === 1 ? "Admin" : "Customer"}
                   </span>
                 </td>
@@ -148,7 +152,10 @@ export default function UsersPage() {
 
       {showForm && (
         <>
-          <div className="modal-backdrop fade show" onClick={() => setShowForm(false)}></div>
+          <div
+            className="modal-backdrop fade show"
+            onClick={() => setShowForm(false)}
+          ></div>
           <div className="modal fade show d-block" tabIndex={-1}>
             <div className="modal-dialog">
               <div className="modal-content">
@@ -157,7 +164,11 @@ export default function UsersPage() {
                     <h5 className="modal-title">
                       {editingId ? "Edit User" : "Add User"}
                     </h5>
-                    <button type="button" className="btn-close" onClick={() => setShowForm(false)}></button>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setShowForm(false)}
+                    ></button>
                   </div>
                   <div className="modal-body">
                     <div className="mb-3">
@@ -165,7 +176,9 @@ export default function UsersPage() {
                       <input
                         className="form-control"
                         value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, name: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -175,7 +188,9 @@ export default function UsersPage() {
                         type="email"
                         className="form-control"
                         value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, email: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -187,7 +202,9 @@ export default function UsersPage() {
                         type="password"
                         className="form-control"
                         value={form.pass}
-                        onChange={(e) => setForm({ ...form, pass: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, pass: e.target.value })
+                        }
                         required={!editingId}
                       />
                     </div>
@@ -196,26 +213,38 @@ export default function UsersPage() {
                       <input
                         className="form-control"
                         value={form.phone}
-                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, phone: e.target.value })
+                        }
                       />
                     </div>
                     <div className="mb-3">
                       <label className="form-label">Role</label>
-                      <select
-                        className="form-select"
+                      <DropdownSelect
                         value={form.role}
-                        onChange={(e) => setForm({ ...form, role: Number(e.target.value) })}
-                      >
-                        <option value={0}>Customer</option>
-                        <option value={1}>Admin</option>
-                      </select>
+                        onChange={(val) =>
+                          setForm({ ...form, role: Number(val) })
+                        }
+                        options={[
+                          { value: 0, label: "Customer" },
+                          { value: 1, label: "Admin" },
+                        ]}
+                      />
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowForm(false)}
+                    >
                       Cancel
                     </button>
-                    <button type="submit" className="btn btn-primary" disabled={saving}>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={saving}
+                    >
                       {saving ? "Saving..." : "Save"}
                     </button>
                   </div>

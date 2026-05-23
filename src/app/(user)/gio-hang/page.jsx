@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import Link from "next/link";
 import { useState } from "react";
@@ -74,7 +75,12 @@ function QuantityControl({ itemKey, quantity, stock, updateQuantity }) {
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             className="form-control-plaintext text-center fw-bold small border-0 px-0"
-            style={{ width: 44, outline: "none", boxShadow: "none", background: "transparent" }}
+            style={{
+              width: 44,
+              outline: "none",
+              boxShadow: "none",
+              background: "transparent",
+            }}
           />
           <button
             className="btn btn-sm border-0 rounded-0"
@@ -101,7 +107,15 @@ function QuantityControl({ itemKey, quantity, stock, updateQuantity }) {
 }
 
 export default function CartPage() {
-  const { items, loading, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
+  const {
+    items,
+    loading,
+    totalItems,
+    totalPrice,
+    updateQuantity,
+    removeItem,
+    clearCart,
+  } = useCart();
 
   if (loading) {
     return (
@@ -130,7 +144,9 @@ export default function CartPage() {
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
         <h2 className="fw-bold mb-0">
           Giỏ hàng{" "}
-          <span className="text-muted fs-6 fw-normal">({totalItems} sản phẩm)</span>
+          <span className="text-muted fs-6 fw-normal">
+            ({totalItems} sản phẩm)
+          </span>
         </h2>
         <button
           className="btn btn-outline-danger btn-sm rounded-pill mt-2 mt-md-0"
@@ -162,10 +178,16 @@ export default function CartPage() {
             const stock = variant?.stock || 0;
 
             return (
-              <div key={key} className="card mb-3 border-0 shadow-sm rounded-4 overflow-hidden">
+              <div
+                key={key}
+                className="card mb-3 border-0 shadow-sm rounded-4 overflow-hidden"
+              >
                 <div className="card-body p-3 p-md-4">
                   <div className="d-flex gap-3">
-                    <Link href={`/san-pham/${product?.slug || ""}`} className="flex-shrink-0">
+                    <Link
+                      href={`/san-pham/${product?.slug || ""}`}
+                      className="flex-shrink-0"
+                    >
                       <img
                         src={imageUrl}
                         alt={product?.name || ""}
@@ -181,13 +203,18 @@ export default function CartPage() {
                             href={`/san-pham/${product?.slug || ""}`}
                             className="text-decoration-none text-dark"
                           >
-                            <h6 className="mb-1 fw-bold" style={{ fontSize: "0.95rem" }}>
+                            <h6
+                              className="mb-1 fw-bold"
+                              style={{ fontSize: "0.95rem" }}
+                            >
                               {product?.name || "Sản phẩm"}
                             </h6>
                           </Link>
                           {(color || size) && (
                             <div className="text-muted small mb-2">
-                              {color && <span className="me-2">Màu: {color.name}</span>}
+                              {color && (
+                                <span className="me-2">Màu: {color.name}</span>
+                              )}
                               {size && <span>Size: {size.name}</span>}
                             </div>
                           )}
@@ -204,15 +231,24 @@ export default function CartPage() {
 
                       <div className="d-flex flex-wrap align-items-end justify-content-between gap-2 mt-2">
                         <div className="d-flex align-items-center gap-2">
-                          <span className="fw-bold text-danger" style={{ fontSize: "1rem" }}>
+                          <span
+                            className="fw-bold text-danger"
+                            style={{ fontSize: "1rem" }}
+                          >
                             {formatPrice(salePrice)}
                           </span>
                           {discount > 0 && (
                             <>
-                              <span className="badge bg-danger rounded-pill" style={{ fontSize: "0.7rem" }}>
+                              <span
+                                className="badge bg-danger rounded-pill"
+                                style={{ fontSize: "0.7rem" }}
+                              >
                                 -{discount}%
                               </span>
-                              <span className="text-decoration-line-through text-muted" style={{ fontSize: "0.8rem" }}>
+                              <span
+                                className="text-decoration-line-through text-muted"
+                                style={{ fontSize: "0.8rem" }}
+                              >
                                 {formatPrice(price)}
                               </span>
                             </>
@@ -225,7 +261,10 @@ export default function CartPage() {
                             stock={stock}
                             updateQuantity={updateQuantity}
                           />
-                          <span className="fw-bold" style={{ fontSize: "0.95rem" }}>
+                          <span
+                            className="fw-bold"
+                            style={{ fontSize: "0.95rem" }}
+                          >
                             {formatPrice(salePrice * item.quantity)}
                           </span>
                         </div>
@@ -237,13 +276,19 @@ export default function CartPage() {
             );
           })}
 
-          <Link href="/san-pham" className="text-decoration-none d-inline-flex align-items-center gap-1 mt-2">
+          <Link
+            href="/san-pham"
+            className="text-decoration-none d-inline-flex align-items-center gap-1 mt-2"
+          >
             <i className="bi bi-arrow-left"></i>Tiếp tục mua sắm
           </Link>
         </div>
 
         <div className="col-lg-4">
-          <div className="card border-0 shadow-sm rounded-4 sticky-top" style={{ top: 80, zIndex: 1 }}>
+          <div
+            className="card border-0 shadow-sm rounded-4 sticky-top"
+            style={{ top: 80, zIndex: 1 }}
+          >
             <div className="card-body p-4">
               <h5 className="fw-bold mb-3">Tạm tính</h5>
               <div className="d-flex justify-content-between mb-2">
@@ -257,9 +302,14 @@ export default function CartPage() {
               <hr />
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="fw-bold fs-5">Tổng cộng</span>
-                <span className="fw-bold fs-5 text-danger">{formatPrice(totalPrice)}</span>
+                <span className="fw-bold fs-5 text-danger">
+                  {formatPrice(totalPrice)}
+                </span>
               </div>
-              <button className="btn btn-dark rounded-pill w-100 py-2 fw-semibold" disabled>
+              <button
+                className="btn btn-dark rounded-pill w-100 py-2 fw-semibold"
+                disabled
+              >
                 Thanh toán (Sắp ra mắt)
               </button>
             </div>

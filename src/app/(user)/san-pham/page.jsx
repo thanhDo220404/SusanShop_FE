@@ -54,7 +54,6 @@ export default function ProductsPage() {
   };
 
   const displayProducts = expandProductsByColor(filtered);
-  console.log("displayProducts: ", displayProducts);
 
   if (sortBy === "price-asc") {
     displayProducts.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
@@ -70,7 +69,7 @@ export default function ProductsPage() {
     <>
       <div className="container-fluid px-lg-5 my-4">
         <h2 className="fw-bold mb-1">Tat ca san pham</h2>
-        <p className="text-muted">{filtered.length} san pham</p>
+        <p className="text-muted">{displayProducts.length} san pham</p>
 
         <div className="d-flex flex-wrap gap-3 align-items-center mb-4">
           <select

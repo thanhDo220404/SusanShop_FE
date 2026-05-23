@@ -1,5 +1,13 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { useAuth } from "./auth";
 import { api } from "@/lib/api";
 
@@ -156,7 +164,9 @@ export function CartProvider({ children }) {
     if (quantity < 1) return;
 
     if (user) {
-      const item = items.find((i) => i._id === itemKey || i.product_variant_id === itemKey);
+      const item = items.find(
+        (i) => i._id === itemKey || i.product_variant_id === itemKey,
+      );
       const maxStock = item?.variant?.stock;
       if (maxStock != null && quantity > maxStock) {
         quantity = maxStock;

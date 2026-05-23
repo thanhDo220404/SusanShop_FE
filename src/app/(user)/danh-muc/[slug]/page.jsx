@@ -83,7 +83,6 @@ export default function CategoryPage() {
   };
 
   const displayProducts = expandProductsByColor(sorted);
-  console.log(displayProducts);
 
   if (sortBy === "price-asc") {
     displayProducts.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
@@ -149,7 +148,7 @@ export default function CategoryPage() {
         </div>
       )}
 
-      <p className="text-muted">{sorted.length} san pham</p>
+      <p className="text-muted">{displayProducts.length} san pham</p>
 
       <div className="d-flex gap-3 align-items-center mb-4">
         <select

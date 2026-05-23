@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import ConfirmModal from "../components/ConfirmModal";
+import DropdownSelect from "../components/DropdownSelect";
 
 const empty = { name: "", size_category_id: "" };
 
@@ -46,7 +48,8 @@ export default function SizeOptionsPage() {
   function openEdit(item) {
     setForm({
       name: item.name,
-      size_category_id: item.size_category_id?._id || item.size_category_id || "",
+      size_category_id:
+        item.size_category_id?._id || item.size_category_id || "",
     });
     setEditingId(item._id);
     setShowForm(true);
@@ -144,7 +147,10 @@ export default function SizeOptionsPage() {
 
       {showForm && (
         <>
-          <div className="modal-backdrop fade show" onClick={() => setShowForm(false)}></div>
+          <div
+            className="modal-backdrop fade show"
+            onClick={() => setShowForm(false)}
+          ></div>
           <div className="modal fade show d-block" tabIndex={-1}>
             <div className="modal-dialog">
               <div className="modal-content">
@@ -153,7 +159,11 @@ export default function SizeOptionsPage() {
                     <h5 className="modal-title">
                       {editingId ? "Edit Size Option" : "Add Size Option"}
                     </h5>
-                    <button type="button" className="btn-close" onClick={() => setShowForm(false)}></button>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setShowForm(false)}
+                    ></button>
                   </div>
                   <div className="modal-body">
                     <div className="mb-3">
@@ -161,32 +171,40 @@ export default function SizeOptionsPage() {
                       <input
                         className="form-control"
                         value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, name: e.target.value })
+                        }
                         required
                       />
                     </div>
                     <div className="mb-3">
                       <label className="form-label">Size Category</label>
-                      <select
-                        className="form-select"
+                      <DropdownSelect
                         value={form.size_category_id}
-                        onChange={(e) => setForm({ ...form, size_category_id: e.target.value })}
-                        required
-                      >
-                        <option value="">Select category...</option>
-                        {categories.map((c) => (
-                          <option key={c._id} value={c._id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) =>
+                          setForm({ ...form, size_category_id: val })
+                        }
+                        options={categories.map((c) => ({
+                          value: c._id,
+                          label: c.name,
+                        }))}
+                        placeholder="Select category..."
+                      />
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowForm(false)}
+                    >
                       Cancel
                     </button>
-                    <button type="submit" className="btn btn-primary" disabled={saving}>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={saving}
+                    >
                       {saving ? "Saving..." : "Save"}
                     </button>
                   </div>

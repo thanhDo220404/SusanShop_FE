@@ -9,7 +9,11 @@ const menuItems = [
   { label: "Categories", href: "/admin/categories", icon: "bi-grid" },
   { label: "Variants", href: "/admin/variants", icon: "bi-stack" },
   { label: "Colors", href: "/admin/colors", icon: "bi-palette" },
-  { label: "Size Categories", href: "/admin/size-categories", icon: "bi-rulers" },
+  {
+    label: "Size Categories",
+    href: "/admin/size-categories",
+    icon: "bi-rulers",
+  },
   { label: "Size Options", href: "/admin/size-options", icon: "bi-fonts" },
   { label: "Users", href: "/admin/users", icon: "bi-people" },
   { label: "Media", href: "/admin/media", icon: "bi-images" },
@@ -50,7 +54,10 @@ export default function Sidebar() {
         })}
       </ul>
       <hr />
-      <Link href="/" className="nav-link text-white-50 d-flex align-items-center gap-2">
+      <Link
+        href="/"
+        className="nav-link text-white-50 d-flex align-items-center gap-2"
+      >
         <i className="bi bi-shop"></i> View Store
       </Link>
     </div>

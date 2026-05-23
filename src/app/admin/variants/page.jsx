@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import ConfirmModal from "../components/ConfirmModal";
+import DropdownSelect from "../components/DropdownSelect";
 
 const empty = {
   product_id: "",
@@ -83,7 +85,8 @@ export default function VariantsPage() {
     }
     const sizeCatId =
       typeof product.category_id === "object"
-        ? product.category_id.size_category_id?._id || product.category_id.size_category_id
+        ? product.category_id.size_category_id?._id ||
+          product.category_id.size_category_id
         : null;
     if (!sizeCatId) {
       setFilteredSizes([]);
@@ -105,7 +108,9 @@ export default function VariantsPage() {
       product_id: productId,
       price: item.price ?? "",
       discount: item.discount ?? 0,
-      sale_starts_at: item.sale_starts_at ? item.sale_starts_at.slice(0, 10) : "",
+      sale_starts_at: item.sale_starts_at
+        ? item.sale_starts_at.slice(0, 10)
+        : "",
       sale_ends_at: item.sale_ends_at ? item.sale_ends_at.slice(0, 10) : "",
       color_id: item.color_id?._id || item.color_id || "",
       size_id: item.size_id?._id || item.size_id || "",
@@ -224,12 +229,16 @@ export default function VariantsPage() {
                 </td>
                 <td>{item.size_id?.name || "-"}</td>
                 <td>
-                  <span className={`badge ${item.stock > 0 ? "bg-success" : "bg-danger"}`}>
+                  <span
+                    className={`badge ${item.stock > 0 ? "bg-success" : "bg-danger"}`}
+                  >
                     {item.stock}
                   </span>
                 </td>
                 <td>
-                  <span className={`badge ${item.status ? "bg-success" : "bg-secondary"}`}>
+                  <span
+                    className={`badge ${item.status ? "bg-success" : "bg-secondary"}`}
+                  >
                     {item.status ? "Active" : "Inactive"}
                   </span>
                 </td>
@@ -257,7 +266,10 @@ export default function VariantsPage() {
 
       {showForm && (
         <>
-          <div className="modal-backdrop fade show" onClick={() => setShowForm(false)}></div>
+          <div
+            className="modal-backdrop fade show"
+            onClick={() => setShowForm(false)}
+          ></div>
           <div className="modal fade show d-block" tabIndex={-1}>
             <div className="modal-dialog modal-lg">
               <div className="modal-content">
@@ -266,25 +278,25 @@ export default function VariantsPage() {
                     <h5 className="modal-title">
                       {editingId ? "Edit Variant" : "Add Variant"}
                     </h5>
-                    <button type="button" className="btn-close" onClick={() => setShowForm(false)}></button>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setShowForm(false)}
+                    ></button>
                   </div>
                   <div className="modal-body">
                     <div className="row">
                       <div className="col-md-6 mb-3">
                         <label className="form-label">Product</label>
-                        <select
-                          className="form-select"
+                        <DropdownSelect
                           value={form.product_id}
-                          onChange={(e) => handleProductChange(e.target.value)}
-                          required
-                        >
-                          <option value="">Select product...</option>
-                          {products.map((p) => (
-                            <option key={p._id} value={p._id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(val) => handleProductChange(val)}
+                          options={products.map((p) => ({
+                            value: p._id,
+                            label: p.name,
+                          }))}
+                          placeholder="Select product..."
+                        />
                       </div>
                       <div className="col-md-6 mb-3">
                         <label className="form-label">Price (VND)</label>
@@ -292,7 +304,9 @@ export default function VariantsPage() {
                           type="number"
                           className="form-control"
                           value={form.price}
-                          onChange={(e) => setForm({ ...form, price: e.target.value })}
+                          onChange={(e) =>
+                            setForm({ ...form, price: e.target.value })
+                          }
                           required
                           min={0}
                         />
@@ -305,7 +319,9 @@ export default function VariantsPage() {
                           type="number"
                           className="form-control"
                           value={form.discount}
-                          onChange={(e) => setForm({ ...form, discount: e.target.value })}
+                          onChange={(e) =>
+                            setForm({ ...form, discount: e.target.value })
+                          }
                           min={0}
                           max={100}
                         />
@@ -316,22 +332,27 @@ export default function VariantsPage() {
                           type="number"
                           className="form-control"
                           value={form.stock}
-                          onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                          onChange={(e) =>
+                            setForm({ ...form, stock: e.target.value })
+                          }
                           min={0}
                         />
                       </div>
                       <div className="col-md-4 mb-3">
                         <label className="form-label">Status</label>
-                        <select
-                          className="form-select"
+                        <DropdownSelect
                           value={form.status ? "true" : "false"}
-                          onChange={(e) =>
-                            setForm({ ...form, status: e.target.value === "true" })
+                          onChange={(val) =>
+                            setForm({
+                              ...form,
+                              status: val === "true",
+                            })
                           }
-                        >
-                          <option value="true">Active</option>
-                          <option value="false">Inactive</option>
-                        </select>
+                          options={[
+                            { value: "true", label: "Active" },
+                            { value: "false", label: "Inactive" },
+                          ]}
+                        />
                       </div>
                     </div>
                     <div className="row">
@@ -361,18 +382,17 @@ export default function VariantsPage() {
                     <div className="row">
                       <div className="col-md-6 mb-3">
                         <label className="form-label">Color</label>
-                        <select
-                          className="form-select"
+                        <DropdownSelect
                           value={form.color_id}
-                          onChange={(e) => setForm({ ...form, color_id: e.target.value })}
-                        >
-                          <option value="">None</option>
-                          {colors.map((c) => (
-                            <option key={c._id} value={c._id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(val) =>
+                            setForm({ ...form, color_id: val })
+                          }
+                          options={colors.map((c) => ({
+                            value: c._id,
+                            label: c.name,
+                          }))}
+                          placeholder="None"
+                        />
                       </div>
                       <div className="col-md-6 mb-3">
                         <label className="form-label">
@@ -383,19 +403,18 @@ export default function VariantsPage() {
                             </span>
                           )}
                         </label>
-                        <select
-                          className="form-select"
+                        <DropdownSelect
                           value={form.size_id}
-                          onChange={(e) => setForm({ ...form, size_id: e.target.value })}
+                          onChange={(val) =>
+                            setForm({ ...form, size_id: val })
+                          }
+                          options={filteredSizes.map((s) => ({
+                            value: s._id,
+                            label: s.name,
+                          }))}
+                          placeholder="None"
                           disabled={!form.product_id || filteredSizes.length === 0}
-                        >
-                          <option value="">None</option>
-                          {filteredSizes.map((s) => (
-                            <option key={s._id} value={s._id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
+                        />
                         {form.product_id && filteredSizes.length === 0 && (
                           <div className="form-text text-warning">
                             Category has no size category assigned
@@ -405,10 +424,18 @@ export default function VariantsPage() {
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowForm(false)}
+                    >
                       Cancel
                     </button>
-                    <button type="submit" className="btn btn-primary" disabled={saving}>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={saving}
+                    >
                       {saving ? "Saving..." : "Save"}
                     </button>
                   </div>

@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { api } from "@/lib/api";
 import ConfirmModal from "../components/ConfirmModal";
+import DropdownSelect from "../components/DropdownSelect";
 
 const empty = {
   name: "",
@@ -298,63 +300,57 @@ export default function CategoriesPage() {
                     <div className="row">
                       <div className="col-md-6 mb-3">
                         <label className="form-label">Parent Category</label>
-                        <select
-                          className="form-select"
+                        <DropdownSelect
                           value={form.parent_category_id}
-                          onChange={(e) =>
+                          onChange={(val) =>
                             setForm({
                               ...form,
-                              parent_category_id: e.target.value,
+                              parent_category_id: val,
                             })
                           }
-                        >
-                          <option value="">None (top level)</option>
-                          {items
+                          options={items
                             .filter((i) => i._id !== editingId)
-                            .map((c) => (
-                              <option key={c._id} value={c._id}>
-                                {c.name}
-                              </option>
-                            ))}
-                        </select>
+                            .map((c) => ({
+                              value: c._id,
+                              label: c.name,
+                            }))}
+                          placeholder="None (top level)"
+                        />
                       </div>
                       <div className="col-md-6 mb-3">
                         <label className="form-label">Size Category</label>
-                        <select
-                          className="form-select"
+                        <DropdownSelect
                           value={form.size_category_id}
-                          onChange={(e) =>
+                          onChange={(val) =>
                             setForm({
                               ...form,
-                              size_category_id: e.target.value,
+                              size_category_id: val,
                             })
                           }
-                        >
-                          <option value="">None</option>
-                          {sizeCats.map((c) => (
-                            <option key={c._id} value={c._id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
+                          options={sizeCats.map((c) => ({
+                            value: c._id,
+                            label: c.name,
+                          }))}
+                          placeholder="None"
+                        />
                       </div>
                     </div>
                     <div className="row">
                       <div className="col-md-6 mb-3">
                         <label className="form-label">Status</label>
-                        <select
-                          className="form-select"
+                        <DropdownSelect
                           value={form.status ? "true" : "false"}
-                          onChange={(e) =>
+                          onChange={(val) =>
                             setForm({
                               ...form,
-                              status: e.target.value === "true",
+                              status: val === "true",
                             })
                           }
-                        >
-                          <option value="true">Active</option>
-                          <option value="false">Inactive</option>
-                        </select>
+                          options={[
+                            { value: "true", label: "Active" },
+                            { value: "false", label: "Inactive" },
+                          ]}
+                        />
                       </div>
                       <div className="col-md-6 mb-3">
                         <label className="form-label">Sort Order</label>
