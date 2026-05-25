@@ -1,19 +1,33 @@
 "use client";
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Banner from "../components/banner";
 import ProductCard from "../components/productCard";
-import ProductSlider from "../components/productSliders";
 import { api } from "@/lib/api";
 import { expandProductsByColor } from "@/lib/products";
 import Link from "next/link";
 
+const ProductSlider = dynamic(() => import("../components/productSliders"), {
+  ssr: false,
+  loading: () => (
+    <div className="container-fluid px-lg-5 my-5">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="fw-bold m-0">San pham noi bat</h2>
+      </div>
+      <div className="d-flex gap-3 overflow-hidden">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex-shrink-0" style={{ width: "25%" }}>
+            <ProductCard product={null} />
+          </div>
+        ))}
+      </div>
+    </div>
+  ),
+});
+
 export default function HomePage() {
   const [featured, setFeatured] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
-
-  useEffect(() => {
-    require("bootstrap/dist/js/bootstrap.bundle.min.js");
-  }, []);
 
   useEffect(() => {
     async function fetchData() {

@@ -17,10 +17,6 @@ export default function CategoryPage() {
   const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
-    require("bootstrap/dist/js/bootstrap.bundle.min.js");
-  }, []);
-
-  useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);

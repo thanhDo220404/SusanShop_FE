@@ -16,7 +16,7 @@ export const api = {
   products: {
     getAll: async () => { const r = await request("/products"); return r.Products; },
     getById: async (id) => { const r = await request(`/products/${id}`); return r.Product; },
-    search: async (keyword) => { const r = await request(`/products?q=${encodeURIComponent(keyword)}`); return r.Products; },
+    search: async (keyword) => { const r = await request(`/products?search=${encodeURIComponent(keyword)}`); return r.Products; },
     create: async (data) => { const r = await request("/products", { method: "POST", body: JSON.stringify(data) }); return r.Product; },
     update: async (id, data) => { const r = await request(`/products/${id}`, { method: "PUT", body: JSON.stringify(data) }); return r.Product; },
     delete: async (id) => { const r = await request(`/products/${id}`, { method: "DELETE" }); return r.Product; },

@@ -27,10 +27,6 @@ export default function ProductDetailPage() {
   const { addToCart, items } = useCart();
 
   useEffect(() => {
-    require("bootstrap/dist/js/bootstrap.bundle.min.js");
-  }, []);
-
-  useEffect(() => {
     async function fetchProduct() {
       try {
         setLoading(true);
@@ -226,6 +222,32 @@ export default function ProductDetailPage() {
 
   return (
     <div className="container-fluid px-lg-5 py-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            description: product.description?.replace(/<[^>]*>/g, "").substring(0, 300) || "",
+            image: images[0]?.url || images[0]?.secure_url || "",
+            sku: product._id,
+            category: product.category_id?.name || "",
+            offers: {
+              "@type": "Offer",
+              price: salePrice || displayPrice || 0,
+              priceCurrency: "VND",
+              availability: inStock
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+              seller: {
+                "@type": "Organization",
+                name: "Susan Shop",
+              },
+            },
+          }),
+        }}
+      />
       <nav aria-label="breadcrumb" className="mb-4">
         <ol className="breadcrumb">
           <li className="breadcrumb-item">

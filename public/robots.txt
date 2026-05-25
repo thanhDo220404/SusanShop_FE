@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dang-nhap
+Disallow: /dang-ky
+Disallow: /gio-hang
+
+Sitemap: https://susanshop.vn/sitemap.xml
