@@ -47,7 +47,7 @@ export const api = {
   },
 
   variants: {
-    getAll: async () => { const r = await request("/product-variants"); return r.ProductVariants; },
+    getAll: async (params) => { const r = await request("/product-variants"); return r.ProductVariants; },
     getById: async (id) => { const r = await request(`/product-variants/${id}`); return r.ProductVariant; },
     create: async (data) => { const r = await request("/product-variants", { method: "POST", body: JSON.stringify(data) }); return r.ProductVariant; },
     update: async (id, data) => { const r = await request(`/product-variants/${id}`, { method: "PUT", body: JSON.stringify(data) }); return r.ProductVariant; },
@@ -103,5 +103,52 @@ export const api = {
     update: async (id, data) => { const r = await request(`/cart-items/${id}`, { method: "PUT", body: JSON.stringify(data) }); return r.CartItem; },
     delete: async (id) => { const r = await request(`/cart-items/${id}`, { method: "DELETE" }); return r.CartItem; },
     deleteByUserId: async (userId) => { const r = await request(`/cart-items/user/${userId}`, { method: "DELETE" }); return r.CartItems; },
+  },
+
+  orders: {
+    getAll: async (params) => {
+      let query = "";
+      if (params) {
+        const searchParams = new URLSearchParams(params);
+        query = "?" + searchParams.toString();
+      }
+      const r = await request(`/orders${query}`);
+      return r;
+    },
+    getById: async (id) => { const r = await request(`/orders/${id}`); return r.Order; },
+    getByUserId: async (userId) => { const r = await request(`/orders/user/${userId}`); return r.Orders; },
+    create: async (data) => { const r = await request("/orders", { method: "POST", body: JSON.stringify(data) }); return r.Order; },
+    updateStatus: async (id, status) => { const r = await request(`/orders/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) }); return r.Order; },
+  },
+
+  orderItems: {
+    getByOrderId: async (orderId) => { const r = await request(`/order-items/order/${orderId}`); return r.OrderItems; },
+  },
+
+  userAddresses: {
+    getByUserId: async (userId) => { const r = await request(`/user-addresses/user/${userId}`); return r.Addresses; },
+    create: async (data) => { const r = await request("/user-addresses", { method: "POST", body: JSON.stringify(data) }); return r.Address; },
+    update: async (id, data) => { const r = await request(`/user-addresses/${id}`, { method: "PUT", body: JSON.stringify(data) }); return r.Address; },
+    setDefault: async (id, userId) => { const r = await request(`/user-addresses/${id}/default`, { method: "PUT", body: JSON.stringify({ user_id: userId }) }); return r.Address; },
+    delete: async (id) => { const r = await request(`/user-addresses/${id}`, { method: "DELETE" }); return r.Address; },
+  },
+
+  reviews: {
+    getAll: async () => { const r = await request("/reviews/all"); return r.Reviews; },
+    getByProductId: async (productId) => { const r = await request(`/reviews/product/${productId}`); return r.Reviews; },
+    getByOrderId: async (orderId) => { const r = await request(`/reviews/order/${orderId}`); return r.Reviews; },
+    getByUserId: async (userId) => { const r = await request(`/reviews/user/${userId}`); return r.Reviews; },
+    create: async (data) => { const r = await request("/reviews", { method: "POST", body: JSON.stringify(data) }); return r.Review; },
+    update: async (id, data) => { const r = await request(`/reviews/${id}`, { method: "PUT", body: JSON.stringify(data) }); return r.Review; },
+    delete: async (id) => { const r = await request(`/reviews/${id}`, { method: "DELETE" }); return r; },
+  },
+
+  coupons: {
+    getAll: async () => { const r = await request("/coupons"); return r.Coupons; },
+    getAvailable: async (userId, total) => { const r = await request(`/coupons/available?user_id=${userId}&total=${total}`); return r.Coupons; },
+    validate: async (code, total) => { const r = await request("/coupons/validate", { method: "POST", body: JSON.stringify({ code, total }) }); return r; },
+    create: async (data) => { const r = await request("/coupons", { method: "POST", body: JSON.stringify(data) }); return r.Coupon; },
+    update: async (id, data) => { const r = await request(`/coupons/${id}`, { method: "PUT", body: JSON.stringify(data) }); return r.Coupon; },
+    delete: async (id) => { const r = await request(`/coupons/${id}`, { method: "DELETE" }); return r.Coupon; },
   },
 };

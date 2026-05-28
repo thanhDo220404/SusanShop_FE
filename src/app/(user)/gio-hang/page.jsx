@@ -1,8 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useCart } from "@/contexts/cart";
+import { api } from "@/lib/api";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 function formatPrice(n) {
   return n != null ? n.toLocaleString("vi-VN") + "đ" : "";
@@ -45,12 +47,8 @@ function QuantityControl({ itemKey, quantity, stock, updateQuantity }) {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.target.blur();
-    }
+    if (e.key === "Enter") e.target.blur();
   };
-
-  const lowStock = stock > 0 && stock <= 5;
 
   return (
     <div>
@@ -92,7 +90,7 @@ function QuantityControl({ itemKey, quantity, stock, updateQuantity }) {
           </button>
         </div>
       </div>
-      {lowStock && (
+      {stock > 0 && stock <= 5 && (
         <small className="text-warning mt-1 d-block">
           <i className="bi bi-exclamation-triangle me-1"></i>Chỉ còn {stock} sp
         </small>
@@ -110,14 +108,131 @@ export default function CartPage() {
   const {
     items,
     loading,
-    totalItems,
-    totalPrice,
     updateQuantity,
     removeItem,
     clearCart,
+    changeVariant,
   } = useCart();
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [allVariants, setAllVariants] = useState([]);
+  const [variantLoading, setVariantLoading] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    async function load() {
+      setVariantLoading(true);
+      try {
+        const vars = await api.variants.getAll();
+        setAllVariants(vars);
+      } catch {
+        /* ignore */
+      } finally {
+        setVariantLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const productVariantsMap = useMemo(() => {
+    const map = new Map();
+    for (const v of allVariants) {
+      const p = v.product_id;
+      if (!p) continue;
+      const pid = p._id || p;
+      if (!map.has(pid)) map.set(pid, []);
+      map.get(pid).push(v);
+    }
+    return map;
+  }, [allVariants]);
+
+  function getAvailableOptions(productId) {
+    const variants = productVariantsMap.get(String(productId)) || [];
+    const colors = [];
+    const seenColors = new Set();
+    for (const v of variants) {
+      if (!v.color_id) continue;
+      const cid = v.color_id?._id || v.color_id;
+      if (seenColors.has(String(cid))) continue;
+      seenColors.add(String(cid));
+      colors.push({ id: cid, name: v.color_id?.name, hex: v.color_id?.hex });
+    }
+    return { colors, variants };
+  }
+
+  const availableItems = useMemo(
+    () =>
+      items.filter((item) => {
+        const v = item.variant;
+        const p = v?.product_id;
+        return (
+          v?.status !== false && p?.status !== false && (v?.stock || 0) > 0
+        );
+      }),
+    [items],
+  );
+
+  const allSelected =
+    availableItems.length > 0 &&
+    availableItems.every((item) => {
+      const key = item._id || item.product_variant_id;
+      return selectedIds.has(key);
+    });
+
+  const toggleAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      const ids = new Set();
+      availableItems.forEach((item) => {
+        ids.add(item._id || item.product_variant_id);
+      });
+      setSelectedIds(ids);
+    }
+  }, [allSelected, availableItems]);
+
+  const toggleItem = useCallback((key) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const selectedTotal = useMemo(() => {
+    let total = 0;
+    for (const item of availableItems) {
+      const key = item._id || item.product_variant_id;
+      if (!selectedIds.has(key)) continue;
+      const price = item.variant?.price || 0;
+      const discount = item.variant?.discount || 0;
+      total += price * (1 - discount / 100) * (item.quantity || 0);
+    }
+    return total;
+  }, [availableItems, selectedIds]);
+
+  const selectedCount = useMemo(() => {
+    let count = 0;
+    for (const item of availableItems) {
+      const key = item._id || item.product_variant_id;
+      if (selectedIds.has(key)) count += item.quantity || 0;
+    }
+    return count;
+  }, [availableItems, selectedIds]);
+
+  function handleConfirmClear() {
+    clearCart();
+    setConfirmClear(false);
+  }
+
+  function handleConfirmDeleteSelected() {
+    for (const id of selectedIds) removeItem(id);
+    setSelectedIds(new Set());
+    setConfirmDeleteSelected(false);
+  }
+
+  if (loading || variantLoading) {
     return (
       <div className="container py-5 text-center">
         <div className="spinner-border text-primary" role="status" />
@@ -140,28 +255,24 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container py-4">
+    <div className="container-fluid px-lg-5 py-4">
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
         <h2 className="fw-bold mb-0">
           Giỏ hàng{" "}
           <span className="text-muted fs-6 fw-normal">
-            ({totalItems} sản phẩm)
+              ({availableItems.reduce((s, i) => s + (i.quantity || 0), 0)} sản phẩm)
           </span>
         </h2>
         <button
           className="btn btn-outline-danger btn-sm rounded-pill mt-2 mt-md-0"
-          onClick={() => {
-            if (window.confirm("Bạn có chắc muốn xóa tất cả sản phẩm?")) {
-              clearCart();
-            }
-          }}
+          onClick={() => setConfirmClear(true)}
         >
           <i className="bi bi-trash me-1"></i>Xóa tất cả
         </button>
       </div>
 
       <div className="row g-4">
-        <div className="col-lg-8">
+        <div className="col-12">
           {items.map((item) => {
             const variant = item.variant;
             const product = variant?.product_id;
@@ -176,14 +287,118 @@ export default function CartPage() {
               "https://res.cloudinary.com/duhmqsywm/image/upload/v1779262540/3694bd21-b0bd-4e47-83ed-58825dfe3771.png";
             const key = item._id || item.product_variant_id;
             const stock = variant?.stock || 0;
+            const isUnavailable =
+              variant?.status === false ||
+              product?.status === false ||
+              stock === 0;
+            const isSelected = selectedIds.has(key);
+
+            const productId = product?._id || product;
+            const { colors, variants: prodVariants } =
+              getAvailableOptions(productId);
+            const currentColorId = color?._id || color;
+            const currentSizeId = size?._id || size;
+
+            const filteredVariants = prodVariants.filter((v) => {
+              const vColorId = v.color_id?._id || v.color_id;
+              return String(vColorId) === String(currentColorId);
+            });
+            const availableSizes = [];
+            const seenSizes = new Set();
+            for (const v of filteredVariants) {
+              if (!v.size_id) continue;
+              const sid = v.size_id?._id || v.size_id;
+              if (seenSizes.has(String(sid))) continue;
+              seenSizes.add(String(sid));
+              availableSizes.push({ id: sid, name: v.size_id?.name || sid });
+            }
+
+            const colorsForSize = prodVariants.filter((v) => {
+              const vSizeId = v.size_id?._id || v.size_id;
+              return String(vSizeId) === String(currentSizeId) && v.color_id;
+            });
+            const availableColorsForSize = [];
+            const seenColorsForSize = new Set();
+            for (const v of colorsForSize) {
+              const cid = v.color_id?._id || v.color_id;
+              if (seenColorsForSize.has(String(cid))) continue;
+              seenColorsForSize.add(String(cid));
+              availableColorsForSize.push({
+                id: cid,
+                name: v.color_id?.name,
+                hex: v.color_id?.hex,
+              });
+            }
+
+            function handleColorChange(newColorId) {
+              const matchingVariant = prodVariants.find((v) => {
+                const vColorId = v.color_id?._id || v.color_id;
+                const vSizeId = v.size_id?._id || v.size_id;
+                return (
+                  String(vColorId) === String(newColorId) &&
+                  String(vSizeId) === String(currentSizeId)
+                );
+              });
+              if (matchingVariant) {
+                changeVariant(key, matchingVariant._id, {
+                  _id: matchingVariant._id,
+                  price: matchingVariant.price,
+                  discount: matchingVariant.discount || 0,
+                  stock: matchingVariant.stock,
+                  status: matchingVariant.status,
+                  color_id: matchingVariant.color_id,
+                  size_id: matchingVariant.size_id,
+                  product_id: product,
+                });
+              }
+            }
+
+            function handleSizeChange(newSizeId) {
+              const matchingVariant = prodVariants.find((v) => {
+                const vColorId = v.color_id?._id || v.color_id;
+                const vSizeId = v.size_id?._id || v.size_id;
+                return (
+                  String(vColorId) === String(currentColorId) &&
+                  String(vSizeId) === String(newSizeId)
+                );
+              });
+              if (matchingVariant) {
+                changeVariant(key, matchingVariant._id, {
+                  _id: matchingVariant._id,
+                  price: matchingVariant.price,
+                  discount: matchingVariant.discount || 0,
+                  stock: matchingVariant.stock,
+                  status: matchingVariant.status,
+                  color_id: matchingVariant.color_id,
+                  size_id: matchingVariant.size_id,
+                  product_id: product,
+                });
+              }
+            }
 
             return (
               <div
                 key={key}
-                className="card mb-3 border-0 shadow-sm rounded-4 overflow-hidden"
+                className={`card mb-3 border-0 shadow-sm rounded-4 overflow-hidden ${isUnavailable ? "opacity-50" : ""}`}
               >
                 <div className="card-body p-3 p-md-4">
-                  <div className="d-flex gap-3">
+                  <div className="d-flex gap-3 align-items-start">
+                    {!isUnavailable && (
+                      <input
+                        type="checkbox"
+                        className="form-check-input mt-1 flex-shrink-0"
+                        style={{ width: 18, height: 18, cursor: "pointer" }}
+                        checked={isSelected}
+                        onChange={() => toggleItem(key)}
+                      />
+                    )}
+                    {isUnavailable && (
+                      <div
+                        className="flex-shrink-0 mt-1"
+                        style={{ width: 18, height: 18 }}
+                      />
+                    )}
+
                     <Link
                       href={`/san-pham/${product?.slug || ""}`}
                       className="flex-shrink-0"
@@ -210,12 +425,37 @@ export default function CartPage() {
                               {product?.name || "Sản phẩm"}
                             </h6>
                           </Link>
-                          {(color || size) && (
-                            <div className="text-muted small mb-2">
-                              {color && (
-                                <span className="me-2">Màu: {color.name}</span>
+                          {isUnavailable ? (
+                            <span className="badge bg-warning text-dark rounded-pill small mt-1">
+                              <i className="bi bi-exclamation-triangle me-1"></i>
+                              Không còn khả dụng
+                            </span>
+                          ) : (
+                            <div className="d-flex gap-2 mt-1 flex-wrap">
+                              {availableColorsForSize.length > 0 && (
+                                <select
+                                  className="form-select form-select-sm w-auto"
+                                  style={{ fontSize: "0.8rem" }}
+                                  value={String(currentColorId)}
+                                  onChange={(e) => handleColorChange(e.target.value)}
+                                >
+                                  {availableColorsForSize.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                  ))}
+                                </select>
                               )}
-                              {size && <span>Size: {size.name}</span>}
+                              {availableSizes.length > 0 && (
+                                <select
+                                  className="form-select form-select-sm w-auto"
+                                  style={{ fontSize: "0.8rem", minWidth: 70 }}
+                                  value={String(currentSizeId)}
+                                  onChange={(e) => handleSizeChange(e.target.value)}
+                                >
+                                  {availableSizes.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  ))}
+                                </select>
+                              )}
                             </div>
                           )}
                         </div>
@@ -254,20 +494,22 @@ export default function CartPage() {
                             </>
                           )}
                         </div>
-                        <div className="d-flex align-items-center gap-3">
-                          <QuantityControl
-                            itemKey={key}
-                            quantity={item.quantity}
-                            stock={stock}
-                            updateQuantity={updateQuantity}
-                          />
-                          <span
-                            className="fw-bold"
-                            style={{ fontSize: "0.95rem" }}
-                          >
-                            {formatPrice(salePrice * item.quantity)}
-                          </span>
-                        </div>
+                        {!isUnavailable && (
+                          <div className="d-flex align-items-center gap-3">
+                            <QuantityControl
+                              itemKey={key}
+                              quantity={item.quantity}
+                              stock={stock}
+                              updateQuantity={updateQuantity}
+                            />
+                            <span
+                              className="fw-bold"
+                              style={{ fontSize: "0.95rem" }}
+                            >
+                              {formatPrice(salePrice * item.quantity)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -282,40 +524,66 @@ export default function CartPage() {
           >
             <i className="bi bi-arrow-left"></i>Tiếp tục mua sắm
           </Link>
-        </div>
 
-        <div className="col-lg-4">
           <div
-            className="card border-0 shadow-sm rounded-4 sticky-top"
-            style={{ top: 80, zIndex: 1 }}
+            className="position-sticky bottom-0 bg-white pt-3 pb-2"
+            style={{ zIndex: 10 }}
           >
-            <div className="card-body p-4">
-              <h5 className="fw-bold mb-3">Tạm tính</h5>
-              <div className="d-flex justify-content-between mb-2">
-                <span className="text-muted">Tạm tính</span>
-                <span className="fw-semibold">{formatPrice(totalPrice)}</span>
+            <div className="d-flex flex-wrap align-items-center gap-3 p-3 border rounded-4 shadow-sm bg-light">
+              {availableItems.length > 0 && (
+                <>
+                  <input
+                    type="checkbox"
+                    className="form-check-input m-0"
+                    style={{ width: 20, height: 20, cursor: "pointer" }}
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    id="selectAllBottom"
+                  />
+                  <label className="form-check-label small fw-semibold me-2" htmlFor="selectAllBottom" style={{ cursor: "pointer" }}>
+                    Chọn tất cả ({availableItems.length})
+                  </label>
+                  {selectedIds.size > 0 && (
+                    <button
+                      className="btn btn-sm btn-outline-danger rounded-pill"
+                      onClick={() => setConfirmDeleteSelected(true)}
+                    >
+                      <i className="bi bi-trash me-1"></i>Xóa đã chọn
+                    </button>
+                  )}
+                </>
+              )}
+              <div className="ms-auto d-flex align-items-center gap-3">
+                <div className="text-end">
+                  <span className="text-muted small">Tổng cộng ({selectedCount} sp):</span>
+                  <span className="fw-bold text-danger ms-2" style={{ fontSize: "1.1rem" }}>{formatPrice(selectedTotal)}</span>
+                </div>
+                <Link
+                  href={`/thanh-toan?ids=${[...selectedIds].join(",")}`}
+                  className={`btn btn-dark rounded-pill px-4 py-2 fw-semibold text-decoration-none ${selectedCount === 0 ? "disabled opacity-50 pe-none" : ""}`}
+                >
+                  {selectedCount === 0 ? "Chọn sản phẩm" : "Thanh toán"}
+                </Link>
               </div>
-              <div className="d-flex justify-content-between mb-3">
-                <span className="text-muted">Phí vận chuyển</span>
-                <span className="text-success fw-semibold">Miễn phí</span>
-              </div>
-              <hr />
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <span className="fw-bold fs-5">Tổng cộng</span>
-                <span className="fw-bold fs-5 text-danger">
-                  {formatPrice(totalPrice)}
-                </span>
-              </div>
-              <button
-                className="btn btn-dark rounded-pill w-100 py-2 fw-semibold"
-                disabled
-              >
-                Thanh toán (Sắp ra mắt)
-              </button>
             </div>
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        show={confirmClear}
+        title="Xóa tất cả"
+        message="Bạn có chắc muốn xóa tất cả sản phẩm?"
+        onConfirm={handleConfirmClear}
+        onCancel={() => setConfirmClear(false)}
+      />
+      <ConfirmModal
+        show={confirmDeleteSelected}
+        title="Xóa đã chọn"
+        message={`Xóa ${selectedIds.size} sản phẩm đã chọn?`}
+        onConfirm={handleConfirmDeleteSelected}
+        onCancel={() => setConfirmDeleteSelected(false)}
+      />
     </div>
   );
 }

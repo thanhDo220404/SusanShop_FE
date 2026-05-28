@@ -6,6 +6,7 @@ import { useEffect, useState, useMemo } from "react";
 import { api } from "@/lib/api";
 import ConfirmModal from "../components/ConfirmModal";
 import DropdownSelect from "../components/DropdownSelect";
+import toast from "react-hot-toast";
 
 const emptyProduct = {
   category_id: "",
@@ -46,15 +47,15 @@ function cn(...args) {
   return args.filter(Boolean).join(" ");
 }
 
+function formatPrice(n) {
+  return n != null ? n.toLocaleString("vi-VN") + "đ" : "";
+}
+
 const TABLE_CELL = {
   padding: "6px 8px",
   fontSize: "0.82rem",
   whiteSpace: "nowrap",
 };
-const INPUT_CLASS =
-  "form-control form-control-sm border-0 bg-transparent shadow-none text-center";
-const SELECT_CLASS =
-  "form-select form-select-sm border-0 bg-transparent shadow-none";
 
 export default function ProductsPage() {
   const [items, setItems] = useState([]);
@@ -72,6 +73,7 @@ export default function ProductsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [slugEdited, setSlugEdited] = useState(false);
   const [varPage, setVarPage] = useState(0);
+  const [search, setSearch] = useState("");
   const PAGE_SIZE = 15;
 
   const slugConflict = useMemo(() => {
@@ -99,6 +101,14 @@ export default function ProductsPage() {
     (varPage + 1) * PAGE_SIZE,
   );
 
+  const filtered = useMemo(() => {
+    if (!search.trim()) return items;
+    const q = search.toLowerCase();
+    return items.filter((item) =>
+      item.name.toLowerCase().includes(q) || item.slug.toLowerCase().includes(q),
+    );
+  }, [items, search]);
+
   async function fetchItems() {
     try {
       setLoading(true);
@@ -121,9 +131,7 @@ export default function ProductsPage() {
     }
   }
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
+  useEffect(() => { fetchItems(); }, []);
 
   function openCreate() {
     setForm(emptyProduct);
@@ -195,17 +203,10 @@ export default function ProductsPage() {
     setVariants((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  function colorName(id) {
-    return colors.find((c) => c._id === id)?.name || "-";
-  }
-  function sizeName(id) {
-    return allSizeOptions.find((s) => s._id === id)?.name || "-";
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     if (!variants.length) {
-      alert("Cần ít nhất 1 variant");
+      toast.error("Cần ít nhất 1 biến thể");
       return;
     }
     setSaving(true);
@@ -218,8 +219,7 @@ export default function ProductsPage() {
       if (editingId) {
         const allVars = await api.variants.getAll();
         const oldVars = allVars.filter(
-          (v) =>
-            String(v.product_id?._id || v.product_id) === String(productId),
+          (v) => String(v.product_id?._id || v.product_id) === String(productId),
         );
         for (const ov of oldVars) {
           if (!existingVarIds.includes(ov._id))
@@ -243,8 +243,9 @@ export default function ProductsPage() {
       }
       setShowForm(false);
       await fetchItems();
+      toast.success(editingId ? "Đã cập nhật sản phẩm" : "Đã tạo sản phẩm");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
@@ -254,31 +255,34 @@ export default function ProductsPage() {
     try {
       const allVars = await api.variants.getAll();
       const toDel = allVars.filter(
-        (v) =>
-          String(v.product_id?._id || v.product_id) ===
-          String(deleteTarget._id),
+        (v) => String(v.product_id?._id || v.product_id) === String(deleteTarget._id),
       );
       for (const v of toDel) await api.variants.delete(v._id).catch(() => {});
       await api.products.delete(deleteTarget._id);
       setDeleteTarget(null);
+      toast.success("Đã xóa sản phẩm");
       await fetchItems();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   }
 
+  function getVariantInfo(item) {
+    if (!item._allVariants) return null;
+    const active = item._allVariants.filter((v) => v.status !== false);
+    if (!active.length) return { count: item._allVariants.length, minPrice: null };
+    const minPrice = Math.min(...active.map((v) => v.price * (1 - (v.discount || 0) / 100)));
+    return { count: item._allVariants.length, minPrice };
+  }
+
   if (loading)
-    return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary" />
-      </div>
-    );
+    return <div className="text-center py-5"><div className="spinner-border" style={{ color: "#6366f1" }} /></div>;
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold mb-0" style={{ letterSpacing: "-0.3px" }}>
-          Sản phẩm
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h4 className="fw-bold mb-0">
+          <i className="bi bi-box me-2" style={{ color: "#6366f1" }}></i>Sản phẩm ({items.length})
         </h4>
         <button className="btn btn-dark rounded-pill px-4" onClick={openCreate}>
           <i className="bi bi-plus-lg me-1"></i>Thêm sản phẩm
@@ -287,102 +291,95 @@ export default function ProductsPage() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
+      <div className="mb-3">
+        <div className="input-group" style={{ maxWidth: 360 }}>
+          <span className="input-group-text bg-white border-end-0 rounded-start-pill">
+            <i className="bi bi-search text-muted"></i>
+          </span>
+          <input
+            type="text"
+            className="form-control border-start-0 rounded-end-pill ps-0"
+            placeholder="Tìm tên hoặc slug sản phẩm..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ boxShadow: "none" }}
+          />
+          {search && (
+            <button className="btn btn-outline-secondary rounded-pill ms-2" onClick={() => setSearch("")}>
+              <i className="bi bi-x"></i>
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="row g-3">
-        {items.map((item) => (
-          <div key={item._id} className="col-xl-4 col-md-6">
-            <div
-              className="card border-0 shadow-sm rounded-4 overflow-hidden h-100"
-              style={{ transition: "box-shadow 0.2s" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.1)")
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "")}
-            >
-              <div className="p-3">
-                <div className="d-flex gap-3">
-                  <div
-                    className="rounded-3 overflow-hidden flex-shrink-0"
-                    style={{ width: 72, height: 72, background: "#f0f2f5" }}
-                  >
-                    {item.images?.[0] ? (
-                      <img
-                        src={item.images[0].url || item.images[0].secure_url}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      <div className="d-flex align-items-center justify-content-center h-100 text-muted">
-                        <i className="bi bi-image"></i>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow-1 min-w-0">
-                    <h6
-                      className="fw-bold mb-1 text-truncate"
-                      style={{ fontSize: "0.9rem" }}
-                    >
-                      {item.name}
-                    </h6>
-                    <div className="d-flex gap-2 align-items-center">
-                      <small className="text-muted">
-                        {item.category_id?.name || "-"}
-                      </small>
-                      <span
-                        className="badge rounded-pill"
-                        style={{
-                          fontSize: "0.65rem",
-                          background: item.status ? "#d4edda" : "#e9ecef",
-                          color: item.status ? "#155724" : "#6c757d",
-                        }}
-                      >
-                        {item.status ? "Active" : "Inactive"}
-                      </span>
-                      {item.features && (
-                        <span
-                          className="badge rounded-pill bg-warning text-dark"
-                          style={{ fontSize: "0.65rem" }}
-                        >
-                          Featured
+        {filtered.map((item) => {
+          const variantInfo = getVariantInfo(item);
+          return (
+            <div key={item._id} className="col-xl-4 col-md-6">
+              <div
+                className="card border-0 shadow-sm rounded-4 overflow-hidden h-100"
+                style={{ transition: "box-shadow 0.2s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "")}
+              >
+                <div className="p-3">
+                  <div className="d-flex gap-3">
+                    <div className="rounded-3 overflow-hidden flex-shrink-0" style={{ width: 72, height: 72, background: "#f0f2f5" }}>
+                      {item.images?.[0] ? (
+                        <img src={item.images[0].url || item.images[0].secure_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+                          <i className="bi bi-image"></i>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-grow-1 min-w-0">
+                      <h6 className="fw-bold mb-1 text-truncate" style={{ fontSize: "0.9rem" }}>{item.name}</h6>
+                      <div className="d-flex flex-wrap gap-1 align-items-center">
+                        <small className="text-muted">{item.category_id?.name || "-"}</small>
+                        <span className="badge rounded-pill" style={{ fontSize: "0.6rem", background: item.status ? "#d4edda" : "#e9ecef", color: item.status ? "#155724" : "#6c757d" }}>
+                          {item.status ? "Hiện" : "Ẩn"}
                         </span>
+                        {item.features && (
+                          <span className="badge rounded-pill bg-warning text-dark" style={{ fontSize: "0.6rem" }}>Nổi bật</span>
+                        )}
+                      </div>
+                      {variantInfo && (
+                        <div className="d-flex align-items-center gap-2 mt-1">
+                          <small className="text-muted" style={{ fontSize: "0.7rem" }}>
+                            <i className="bi bi-stack me-1"></i>{variantInfo.count} biến thể
+                          </small>
+                          {variantInfo.minPrice != null && (
+                            <small className="fw-semibold" style={{ color: "#dc2626", fontSize: "0.75rem" }}>{formatPrice(variantInfo.minPrice)}</small>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-                <div className="d-flex justify-content-end gap-1 mt-3 pt-2 border-top">
-                  <button
-                    className="btn btn-sm btn-outline-secondary rounded-pill px-3"
-                    onClick={() => openEdit(item)}
-                  >
-                    <i className="bi bi-pencil me-1"></i>Sửa
-                  </button>
-                  <button
-                    className="btn btn-sm btn-outline-danger rounded-pill px-3"
-                    onClick={() => setDeleteTarget(item)}
-                  >
-                    <i className="bi bi-trash"></i>
-                  </button>
+                  <div className="d-flex justify-content-end gap-1 mt-3 pt-2 border-top">
+                    <button className="btn btn-sm btn-outline-primary rounded-pill px-3" onClick={() => openEdit(item)}>
+                      <i className="bi bi-pencil me-1"></i>Sửa
+                    </button>
+                    <button className="btn btn-sm btn-outline-danger rounded-pill px-3" onClick={() => setDeleteTarget(item)}>
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-        {items.length === 0 && (
+          );
+        })}
+        {filtered.length === 0 && (
           <div className="col-12 text-center py-5 text-muted">
-            Chưa có sản phẩm nào.
+            {search.trim() ? "Không tìm thấy sản phẩm" : "Chưa có sản phẩm nào"}
           </div>
         )}
       </div>
 
       {showForm && (
         <>
-          <div
-            className="modal-backdrop fade show"
-            onClick={() => setShowForm(false)}
-          />
+          <div className="modal-backdrop fade show" onClick={() => setShowForm(false)} />
           <div className="modal fade show d-block" tabIndex={-1}>
             <div className="modal-dialog modal-xl">
               <div className="modal-content rounded-4 border-0 shadow-lg">
@@ -391,134 +388,65 @@ export default function ProductsPage() {
                     <h5 className="modal-title fw-bold">
                       {editingId ? "Sửa sản phẩm" : "Thêm sản phẩm"}
                     </h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      onClick={() => setShowForm(false)}
-                    />
+                    <button type="button" className="btn-close" onClick={() => setShowForm(false)} />
                   </div>
-                  <div
-                    className="modal-body px-4 pb-0"
-                    style={{ maxHeight: "75vh", overflowY: "auto" }}
-                  >
-                    {/* Basic info */}
+                  <div className="modal-body px-4 pb-0" style={{ maxHeight: "75vh", overflowY: "auto" }}>
                     <div className="row g-3 mb-3">
                       <div className="col-md-6">
-                        <label className="form-label small fw-semibold text-muted">
-                          Tên sản phẩm
-                        </label>
-                        <input
-                          className="form-control rounded-3"
-                          value={form.name}
-                          onChange={(e) => handleNameChange(e.target.value)}
-                          required
-                        />
+                        <label className="form-label small fw-semibold text-muted">Tên sản phẩm</label>
+                        <input className="form-control rounded-3" value={form.name} onChange={(e) => handleNameChange(e.target.value)} required />
                       </div>
                       <div className="col-md-6">
                         <label className="form-label small fw-semibold text-muted">
-                          Slug{" "}
-                          {!slugEdited && !editingId && form.name && (
-                            <span className="text-muted">(auto)</span>
-                          )}
+                          Slug {!slugEdited && !editingId && form.name && <span className="text-muted">(tự động)</span>}
                         </label>
                         <input
-                          className={cn(
-                            "form-control rounded-3",
-                            slugConflict && "is-invalid",
-                          )}
+                          className={cn("form-control rounded-3", slugConflict && "is-invalid")}
                           value={form.slug}
-                          onChange={(e) => {
-                            setSlugEdited(true);
-                            setForm((p) => ({ ...p, slug: e.target.value }));
-                          }}
+                          onChange={(e) => { setSlugEdited(true); setForm((p) => ({ ...p, slug: e.target.value })); }}
                           required
                         />
-                        {slugConflict && (
-                          <div className="invalid-feedback d-block">
-                            Slug đã tồn tại
-                          </div>
-                        )}
+                        {slugConflict && <div className="invalid-feedback d-block">Slug đã tồn tại</div>}
                       </div>
                     </div>
                     <div className="row g-3 mb-3">
                       <div className="col-md-4">
-                        <label className="form-label small fw-semibold text-muted">
-                          Danh mục
-                        </label>
-                       <DropdownSelect
+                        <label className="form-label small fw-semibold text-muted">Danh mục</label>
+                        <DropdownSelect
                           value={form.category_id}
-                          onChange={(val) =>
-                            setForm({ ...form, category_id: val })
-                          }
-                          options={categories.map((c) => ({
-                            value: c._id,
-                            label: c.name,
-                          }))}
+                          onChange={(val) => setForm({ ...form, category_id: val })}
+                          options={categories.map((c) => ({ value: c._id, label: c.name }))}
                           placeholder="Chọn danh mục..."
                         />
                       </div>
                       <div className="col-md-2">
-                        <label className="form-label small fw-semibold text-muted">
-                          Trạng thái
-                        </label>
+                        <label className="form-label small fw-semibold text-muted">Trạng thái</label>
                         <DropdownSelect
                           value={form.status ? "true" : "false"}
-                          onChange={(val) =>
-                            setForm({
-                              ...form,
-                              status: val === "true",
-                            })
-                          }
-                          options={[
-                            { value: "true", label: "Active" },
-                            { value: "false", label: "Inactive" },
-                          ]}
+                          onChange={(val) => setForm({ ...form, status: val === "true" })}
+                          options={[{ value: "true", label: "Hiện" }, { value: "false", label: "Ẩn" }]}
                         />
                       </div>
                       <div className="col-md-2">
-                        <label className="form-label small fw-semibold text-muted">
-                          Nổi bật
-                        </label>
+                        <label className="form-label small fw-semibold text-muted">Nổi bật</label>
                         <DropdownSelect
                           value={form.features ? "true" : "false"}
-                          onChange={(val) =>
-                            setForm({
-                              ...form,
-                              features: val === "true",
-                            })
-                          }
-                          options={[
-                            { value: "false", label: "No" },
-                            { value: "true", label: "Yes" },
-                          ]}
+                          onChange={(val) => setForm({ ...form, features: val === "true" })}
+                          options={[{ value: "false", label: "Không" }, { value: "true", label: "Có" }]}
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label small fw-semibold text-muted">
-                          Mô tả
-                        </label>
-                        <textarea
-                          className="form-control rounded-3"
-                          rows={1}
-                          value={form.description}
-                          onChange={(e) =>
-                            setForm({ ...form, description: e.target.value })
-                          }
-                        />
+                        <label className="form-label small fw-semibold text-muted">Mô tả</label>
+                        <textarea className="form-control rounded-3" rows={1} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
                       </div>
                     </div>
                     <div className="mb-3">
                       <label className="form-label small fw-semibold text-muted">
                         Hình ảnh ({form.image_ids.length} đã chọn)
                       </label>
-                      <div
-                        className="border rounded-3 p-3"
-                        style={{ maxHeight: 170, overflowY: "auto" }}
-                      >
+                      <div className="border rounded-3 p-3" style={{ maxHeight: 170, overflowY: "auto" }}>
                         {mediaList.length === 0 && (
-                          <p className="text-muted text-center my-2 small">
-                            Chưa có ảnh. Vào Media để upload.
-                          </p>
+                          <p className="text-muted text-center my-2 small">Chưa có ảnh. Vào Media để upload.</p>
                         )}
                         <div className="d-flex flex-wrap gap-2">
                           {mediaList.map((m) => {
@@ -535,33 +463,12 @@ export default function ProductsPage() {
                                     return { ...prev, image_ids: ids };
                                   });
                                 }}
-                                className={cn(
-                                  "rounded-3 overflow-hidden position-relative",
-                                  sel && "ring-2",
-                                )}
-                                style={{
-                                  cursor: "pointer",
-                                  width: 80,
-                                  height: 80,
-                                  border: sel
-                                    ? "2px solid #0d6efd"
-                                    : "2px solid #eee",
-                                }}
+                                className={cn("rounded-3 overflow-hidden position-relative", sel && "ring-2")}
+                                style={{ cursor: "pointer", width: 80, height: 80, border: sel ? "2px solid #0d6efd" : "2px solid #eee" }}
                               >
-                                <img
-                                  src={m.url || m.secure_url}
-                                  alt=""
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                  }}
-                                />
+                                <img src={m.url || m.secure_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 {sel && (
-                                  <span
-                                    className="position-absolute top-0 end-0 badge bg-primary rounded-pill m-1"
-                                    style={{ fontSize: "0.55rem" }}
-                                  >
+                                  <span className="position-absolute top-0 end-0 badge bg-primary rounded-pill m-1" style={{ fontSize: "0.55rem" }}>
                                     <i className="bi bi-check"></i>
                                   </span>
                                 )}
@@ -572,26 +479,16 @@ export default function ProductsPage() {
                       </div>
                     </div>
 
-                    {/* Variants */}
                     <div className="d-flex justify-content-between align-items-center mb-2">
-                      <h6 className="fw-bold mb-0">
-                        Biến thể ({variants.length})
-                      </h6>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-dark rounded-pill"
-                        onClick={addVariant}
-                      >
+                      <h6 className="fw-bold mb-0">Biến thể ({variants.length})</h6>
+                      <button type="button" className="btn btn-sm btn-dark rounded-pill" onClick={addVariant}>
                         <i className="bi bi-plus-lg me-1"></i>Thêm
                       </button>
                     </div>
 
                     <div className="border rounded-3 overflow-hidden mb-3">
                       <div style={{ overflowX: "auto" }}>
-                        <table
-                          className="table table-sm table-borderless mb-0 align-middle"
-                          style={{ minWidth: 1000 }}
-                        >
+                        <table className="table table-sm table-borderless mb-0 align-middle" style={{ minWidth: 1000 }}>
                           <thead className="bg-light">
                             <tr>
                               <th style={TABLE_CELL}>#</th>
@@ -611,207 +508,66 @@ export default function ProductsPage() {
                               const realIdx = varPage * PAGE_SIZE + idx;
                               return (
                                 <tr key={realIdx}>
-                                  <td
-                                    style={TABLE_CELL}
-                                    className="text-muted small"
-                                  >
-                                    {realIdx + 1}
+                                  <td style={TABLE_CELL} className="text-muted small">{realIdx + 1}</td>
+                                  <td style={TABLE_CELL}>
+                                    <input type="number" className="form-control form-control-sm border-0 bg-transparent shadow-none text-center"
+                                      style={{ width: 90 }} value={v.price} onChange={(e) => updateVariant(realIdx, "price", e.target.value)} min={0} />
                                   </td>
                                   <td style={TABLE_CELL}>
-                                    <input
-                                      type="number"
-                                      className={INPUT_CLASS}
-                                      style={{ width: 90 }}
-                                      value={v.price}
-                                      onChange={(e) =>
-                                        updateVariant(
-                                          realIdx,
-                                          "price",
-                                          e.target.value,
-                                        )
-                                      }
-                                      min={0}
-                                    />
+                                    <input type="number" className="form-control form-control-sm border-0 bg-transparent shadow-none text-center"
+                                      style={{ width: 55 }} value={v.discount} onChange={(e) => updateVariant(realIdx, "discount", e.target.value)} min={0} max={100} />
                                   </td>
                                   <td style={TABLE_CELL}>
-                                    <input
-                                      type="number"
-                                      className={INPUT_CLASS}
-                                      style={{ width: 55 }}
-                                      value={v.discount}
-                                      onChange={(e) =>
-                                        updateVariant(
-                                          realIdx,
-                                          "discount",
-                                          e.target.value,
-                                        )
-                                      }
-                                      min={0}
-                                      max={100}
-                                    />
-                                  </td>
-                                  <td style={TABLE_CELL}>
-                                    <input
-                                      type="number"
-                                      className={INPUT_CLASS}
-                                      style={{ width: 65 }}
-                                      value={v.stock}
-                                      onChange={(e) =>
-                                        updateVariant(
-                                          realIdx,
-                                          "stock",
-                                          e.target.value,
-                                        )
-                                      }
-                                      min={0}
-                                    />
+                                    <input type="number" className="form-control form-control-sm border-0 bg-transparent shadow-none text-center"
+                                      style={{ width: 65 }} value={v.stock} onChange={(e) => updateVariant(realIdx, "stock", e.target.value)} min={0} />
                                   </td>
                                   <td style={TABLE_CELL}>
                                     <div className="d-flex align-items-center gap-1">
-                                      {v.color_id &&
-                                        colors.find(
-                                          (c) => c._id === v.color_id,
-                                        ) && (
-                                          <span
-                                            style={{
-                                              width: 16,
-                                              height: 16,
-                                              borderRadius: "50%",
-                                              background: colors.find(
-                                                (c) => c._id === v.color_id,
-                                              ).hex,
-                                              border: "1px solid #ddd",
-                                              display: "inline-block",
-                                            }}
-                                          />
-                                        )}
-                                      <select
-                                        className={SELECT_CLASS}
-                                        style={{ width: 110 }}
-                                        value={v.color_id}
-                                        onChange={(e) =>
-                                          updateVariant(
-                                            realIdx,
-                                            "color_id",
-                                            e.target.value,
-                                          )
-                                        }
-                                      >
+                                      {v.color_id && colors.find((c) => c._id === v.color_id) && (
+                                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: colors.find((c) => c._id === v.color_id).hex, border: "1px solid #ddd", display: "inline-block" }} />
+                                      )}
+                                      <select className="form-select form-select-sm border-0 bg-transparent shadow-none" style={{ width: 110 }}
+                                        value={v.color_id} onChange={(e) => updateVariant(realIdx, "color_id", e.target.value)}>
                                         <option value="">-</option>
-                                        {colors.map((c) => (
-                                          <option key={c._id} value={c._id}>
-                                            {c.name}
-                                          </option>
-                                        ))}
+                                        {colors.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
                                       </select>
                                     </div>
                                   </td>
                                   <td style={TABLE_CELL}>
-                                    <select
-                                      className={SELECT_CLASS}
-                                      style={{ width: 70 }}
-                                      value={v.size_id}
-                                      onChange={(e) =>
-                                        updateVariant(
-                                          realIdx,
-                                          "size_id",
-                                          e.target.value,
-                                        )
-                                      }
-                                      disabled={
-                                        !filteredSizes.length &&
-                                        !!form.category_id
-                                      }
-                                    >
+                                    <select className="form-select form-select-sm border-0 bg-transparent shadow-none" style={{ width: 70 }}
+                                      value={v.size_id} onChange={(e) => updateVariant(realIdx, "size_id", e.target.value)}
+                                      disabled={!filteredSizes.length && !!form.category_id}>
                                       <option value="">-</option>
-                                      {filteredSizes.map((s) => (
-                                        <option key={s._id} value={s._id}>
-                                          {s.name}
-                                        </option>
-                                      ))}
+                                      {filteredSizes.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
                                     </select>
                                   </td>
                                   <td style={TABLE_CELL}>
-                                    <select
-                                      className={SELECT_CLASS}
-                                      style={{ width: 80 }}
-                                      value={v.status}
-                                      onChange={(e) =>
-                                        updateVariant(
-                                          realIdx,
-                                          "status",
-                                          e.target.value === "true",
-                                        )
-                                      }
-                                    >
-                                      <option value="true">Active</option>
-                                      <option value="false">Inactive</option>
+                                    <select className="form-select form-select-sm border-0 bg-transparent shadow-none" style={{ width: 80 }}
+                                      value={v.status} onChange={(e) => updateVariant(realIdx, "status", e.target.value === "true")}>
+                                      <option value="true">Hiện</option>
+                                      <option value="false">Ẩn</option>
                                     </select>
                                   </td>
                                   <td style={TABLE_CELL}>
-                                    <input
-                                      type="date"
-                                      className={INPUT_CLASS}
-                                      style={{
-                                        width: 120,
-                                        fontSize: "0.75rem",
-                                      }}
-                                      value={v.sale_starts_at}
-                                      onChange={(e) =>
-                                        updateVariant(
-                                          realIdx,
-                                          "sale_starts_at",
-                                          e.target.value,
-                                        )
-                                      }
-                                    />
+                                    <input type="date" className="form-control form-control-sm border-0 bg-transparent shadow-none"
+                                      style={{ width: 120, fontSize: "0.75rem" }} value={v.sale_starts_at}
+                                      onChange={(e) => updateVariant(realIdx, "sale_starts_at", e.target.value)} />
                                   </td>
                                   <td style={TABLE_CELL}>
-                                    <input
-                                      type="date"
-                                      className={INPUT_CLASS}
-                                      style={{
-                                        width: 120,
-                                        fontSize: "0.75rem",
-                                      }}
-                                      value={v.sale_ends_at}
-                                      onChange={(e) =>
-                                        updateVariant(
-                                          realIdx,
-                                          "sale_ends_at",
-                                          e.target.value,
-                                        )
-                                      }
-                                    />
+                                    <input type="date" className="form-control form-control-sm border-0 bg-transparent shadow-none"
+                                      style={{ width: 120, fontSize: "0.75rem" }} value={v.sale_ends_at}
+                                      onChange={(e) => updateVariant(realIdx, "sale_ends_at", e.target.value)} />
                                   </td>
-                                  <td
-                                    style={{
-                                      ...TABLE_CELL,
-                                      textAlign: "right",
-                                    }}
-                                  >
+                                  <td style={{ ...TABLE_CELL, textAlign: "right" }}>
                                     <div className="d-flex gap-1 justify-content-end">
-                                      <button
-                                        type="button"
-                                        className="btn btn-sm btn-outline-secondary py-0 px-1"
-                                        title="Nhân bản"
+                                      <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-1" title="Nhân bản"
                                         onClick={() => {
-                                          const copy = { ...v };
-                                          delete copy._id;
-                                          setVariants((prev) => {
-                                            const n = [...prev];
-                                            n.splice(realIdx + 1, 0, copy);
-                                            return n;
-                                          });
-                                        }}
-                                      >
+                                          const copy = { ...v }; delete copy._id;
+                                          setVariants((prev) => { const n = [...prev]; n.splice(realIdx + 1, 0, copy); return n; });
+                                        }}>
                                         <i className="bi bi-copy"></i>
                                       </button>
-                                      <button
-                                        type="button"
-                                        className="btn btn-sm btn-outline-danger py-0 px-1"
-                                        onClick={() => removeVariant(realIdx)}
-                                      >
+                                      <button type="button" className="btn btn-sm btn-outline-danger py-0 px-1" onClick={() => removeVariant(realIdx)}>
                                         <i className="bi bi-x"></i>
                                       </button>
                                     </div>
@@ -823,54 +579,26 @@ export default function ProductsPage() {
                         </table>
                       </div>
                       {variants.length === 0 && (
-                        <p className="text-muted text-center py-4 small mb-0">
-                          Nhấn &quot;Thêm&quot; để tạo biến thể đầu tiên.
-                        </p>
+                        <p className="text-muted text-center py-4 small mb-0">Nhấn &quot;Thêm&quot; để tạo biến thể đầu tiên.</p>
                       )}
                     </div>
 
                     {totalPages > 1 && (
                       <div className="d-flex justify-content-center align-items-center gap-2 mb-3">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-secondary rounded-pill px-3"
-                          disabled={varPage === 0}
-                          onClick={() => setVarPage((p) => p - 1)}
-                        >
+                        <button type="button" className="btn btn-sm btn-outline-secondary rounded-pill px-3" disabled={varPage === 0} onClick={() => setVarPage((p) => p - 1)}>
                           <i className="bi bi-chevron-left"></i>
                         </button>
-                        <span className="small text-muted">
-                          {varPage + 1} / {totalPages}
-                        </span>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-secondary rounded-pill px-3"
-                          disabled={varPage >= totalPages - 1}
-                          onClick={() => setVarPage((p) => p + 1)}
-                        >
+                        <span className="small text-muted">{varPage + 1} / {totalPages}</span>
+                        <button type="button" className="btn btn-sm btn-outline-secondary rounded-pill px-3" disabled={varPage >= totalPages - 1} onClick={() => setVarPage((p) => p + 1)}>
                           <i className="bi bi-chevron-right"></i>
                         </button>
                       </div>
                     )}
                   </div>
                   <div className="modal-footer border-0 px-4 pb-4 pt-0">
-                    <button
-                      type="button"
-                      className="btn btn-light rounded-pill px-4"
-                      onClick={() => setShowForm(false)}
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn-dark rounded-pill px-4"
-                      disabled={saving || slugConflict}
-                    >
-                      {saving
-                        ? "Đang lưu..."
-                        : slugConflict
-                          ? "Sửa slug trước"
-                          : "Lưu"}
+                    <button type="button" className="btn btn-light rounded-pill px-4" onClick={() => setShowForm(false)}>Hủy</button>
+                    <button type="submit" className="btn btn-dark rounded-pill px-4" disabled={saving || slugConflict}>
+                      {saving ? "Đang lưu..." : slugConflict ? "Sửa slug trước" : "Lưu"}
                     </button>
                   </div>
                 </form>

@@ -14,15 +14,13 @@ export default function CategoryPage() {
   const [products, setProducts] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        const [cats, prods, vars] = await Promise.all([
+        const [cats, vars] = await Promise.all([
           api.categories.getAll(),
-          api.products.getAll(),
           api.variants.getAll(),
         ]);
         setAllCategories(cats);
@@ -48,19 +46,22 @@ export default function CategoryPage() {
           };
 
           const allCategoryIds = collectDescendantIds(foundCat._id);
-          const catProds = prods
-            .filter((p) => {
-              const pCatId = p.category_id?._id || p.category_id;
-              return allCategoryIds.includes(String(pCatId));
-            })
-            .map((p) => ({
-              ...p,
-              variants: vars.filter((v) => {
-                const vProdId = v.product_id?._id || v.product_id;
-                return String(vProdId) === String(p._id);
-              }),
-            }));
-          setProducts(catProds);
+
+          const productMap = new Map();
+          for (const v of vars) {
+            const p = v.product_id;
+            if (!p || !p.status || v.status === false) continue;
+            const pid = p._id || p;
+            const pCatId = p.category_id?._id || p.category_id;
+            if (!allCategoryIds.includes(String(pCatId))) continue;
+
+            if (!productMap.has(pid)) {
+              productMap.set(pid, { ...p, variants: [] });
+            }
+            productMap.get(pid).variants.push(v);
+          }
+
+          setProducts([...productMap.values()]);
         }
       } catch (err) {
         console.error(err);
@@ -71,24 +72,7 @@ export default function CategoryPage() {
     if (slug) fetchData();
   }, [slug]);
 
-  const sorted = [...products];
-
-  const getEffectivePrice = (p) => {
-    const v = p.variants?.[0];
-    return v ? v.price * (1 - (v.discount || 0) / 100) : 0;
-  };
-
-  const displayProducts = expandProductsByColor(sorted);
-
-  if (sortBy === "price-asc") {
-    displayProducts.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
-  } else if (sortBy === "price-desc") {
-    displayProducts.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
-  } else {
-    displayProducts.sort(
-      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
-    );
-  }
+  const displayProducts = expandProductsByColor(products);
 
   if (loading) {
     return (
@@ -145,18 +129,6 @@ export default function CategoryPage() {
       )}
 
       <p className="text-muted">{displayProducts.length} san pham</p>
-
-      <div className="d-flex gap-3 align-items-center mb-4">
-        <select
-          className="form-select w-auto"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option value="newest">Moi nhat</option>
-          <option value="price-asc">Gia: Thap den Cao</option>
-          <option value="price-desc">Gia: Cao den Thap</option>
-        </select>
-      </div>
 
       {displayProducts.length === 0 ? (
         <div className="text-center py-5">

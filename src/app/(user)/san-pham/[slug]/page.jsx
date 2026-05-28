@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/purity */
 /* eslint-disable @next/next/no-img-element */
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import ProductCard from "@/app/components/productCard";
 import { api } from "@/lib/api";
 import { useCart } from "@/contexts/cart";
@@ -23,24 +25,35 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [inputValue, setInputValue] = useState("1");
   const [activeTab, setActiveTab] = useState("description");
-  const [addedMsg, setAddedMsg] = useState("");
+  const [reviews, setReviews] = useState([]);
   const { addToCart, items } = useCart();
 
   useEffect(() => {
     async function fetchProduct() {
       try {
         setLoading(true);
-        const all = await api.products.getAll();
-        const productData = all.find((p) => p.slug === slug);
+        const allVars = await api.variants.getAll();
+
+        const productMap = new Map();
+        for (const v of allVars) {
+          const p = v.product_id;
+          if (!p || !p.status) continue;
+          if (v.status === false) continue;
+          const pid = p._id || p;
+          if (!productMap.has(pid)) {
+            productMap.set(pid, { ...p, variants: [] });
+          }
+          productMap.get(pid).variants.push(v);
+        }
+
+        const productData = [...productMap.values()].find(
+          (p) => p.slug === slug,
+        );
         if (!productData) {
           setLoading(false);
           return;
         }
-        const allVars = await api.variants.getAll();
-        const vars = allVars.filter((v) => {
-          const vProdId = v.product_id?._id || v.product_id;
-          return vProdId === productData._id;
-        });
+        const vars = productData.variants || [];
         setProduct(productData);
         setVariants(vars);
         if (vars.length > 0) {
@@ -61,6 +74,15 @@ export default function ProductDetailPage() {
     }
     if (slug) fetchProduct();
   }, [slug]);
+
+  useEffect(() => {
+    if (product?._id) {
+      api.reviews
+        .getByProductId(product._id)
+        .then(setReviews)
+        .catch(() => {});
+    }
+  }, [product?._id]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -90,6 +112,7 @@ export default function ProductDetailPage() {
   }
 
   const images = product.images || [];
+
   const currentImage =
     images[selectedImage]?.url ||
     images[selectedImage]?.secure_url ||
@@ -171,13 +194,11 @@ export default function ProductDetailPage() {
 
   function handleAddToCart() {
     if (!currentVariant) {
-      setAddedMsg("Vui long chon mau sac va kich co");
-      setTimeout(() => setAddedMsg(""), 2000);
+      toast.error("Vui long chon mau sac va kich co");
       return;
     }
     if (!inStock) {
-      setAddedMsg("San pham da het hang");
-      setTimeout(() => setAddedMsg(""), 2000);
+      toast.error("San pham da het hang");
       return;
     }
 
@@ -190,14 +211,12 @@ export default function ProductDetailPage() {
     if (total > currentStock) {
       const remaining = currentStock - inCart;
       if (remaining <= 0) {
-        setAddedMsg(`Gio hang da co ${currentStock}/${currentStock} san pham`);
-        setTimeout(() => setAddedMsg(""), 2500);
+        toast.error(`Gio hang da co ${currentStock}/${currentStock} san pham`);
         return;
       }
-      setAddedMsg(`Chi con them duoc ${remaining} san pham nua`);
+      toast(`Chi con them duoc ${remaining} san pham nua`, { icon: "⚠️" });
       setQuantity(remaining);
       setInputValue(String(remaining));
-      setTimeout(() => setAddedMsg(""), 2000);
       return;
     }
 
@@ -216,8 +235,7 @@ export default function ProductDetailPage() {
       },
     };
     addToCart(currentVariant._id, quantity, variantData);
-    setAddedMsg("Da them vao gio hang!");
-    setTimeout(() => setAddedMsg(""), 2000);
+    toast.success("Da them vao gio hang!");
   }
 
   return (
@@ -229,7 +247,9 @@ export default function ProductDetailPage() {
             "@context": "https://schema.org",
             "@type": "Product",
             name: product.name,
-            description: product.description?.replace(/<[^>]*>/g, "").substring(0, 300) || "",
+            description:
+              product.description?.replace(/<[^>]*>/g, "").substring(0, 300) ||
+              "",
             image: images[0]?.url || images[0]?.secure_url || "",
             sku: product._id,
             category: product.category_id?.name || "",
@@ -490,14 +510,6 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {addedMsg && (
-            <div
-              className={`alert ${addedMsg.includes("het hang") || addedMsg.includes("chon") ? "alert-warning" : "alert-success"} py-2 mb-3`}
-            >
-              {addedMsg}
-            </div>
-          )}
-
           <div
             className="accordion border rounded-3 overflow-hidden"
             id="productInfo"
@@ -531,68 +543,16 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="accordion-item border-0 border-top">
-              <h2 className="accordion-header">
-                <button
-                  className={`accordion-button ${activeTab !== "details" ? "collapsed" : ""} fw-semibold`}
-                  onClick={() =>
-                    setActiveTab(activeTab === "details" ? "" : "details")
-                  }
-                  style={{
-                    background:
-                      activeTab === "details" ? "#f8f9fa" : "transparent",
-                  }}
-                >
-                  <i className="bi bi-info-circle me-2"></i>Chi tiet
-                </button>
-              </h2>
-              <div
-                className={`accordion-collapse collapse ${activeTab === "details" ? "show" : ""}`}
-              >
-                <div className="accordion-body">
-                  <table className="table table-sm mb-0">
-                    <tbody>
-                      <tr>
-                        <td
-                          className="text-muted border-0 ps-0"
-                          style={{ width: 120 }}
-                        >
-                          Danh muc
-                        </td>
-                        <td className="border-0 fw-medium">
-                          {product.category_id?.name || "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="text-muted border-0 ps-0">Noi bat</td>
-                        <td className="border-0">
-                          {product.features ? (
-                            <span className="badge bg-warning text-dark">
-                              <i className="bi bi-star-fill me-1"></i>Noi bat
-                            </span>
-                          ) : (
-                            "Khong"
-                          )}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="text-muted border-0 ps-0">Trang thai</td>
-                        <td className="border-0">
-                          <span
-                            className={`badge ${product.status ? "bg-success" : "bg-secondary"}`}
-                          >
-                            {product.status ? "Dang ban" : "Da an"}
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
+
+      {reviews.length > 0 && (
+        <div className="mt-5">
+          <h3 className="fw-bold mb-4">Danh gia san pham</h3>
+          <ReviewsList reviews={reviews} />
+        </div>
+      )}
 
       <RelatedProducts
         currentId={product._id}
@@ -608,21 +568,26 @@ function RelatedProducts({ currentId, categoryId }) {
   useEffect(() => {
     async function fetchRelated() {
       try {
-        const all = await api.products.getAll();
-        const vars = await api.variants.getAll();
-        const filtered = all
+        const allVars = await api.variants.getAll();
+
+        const productMap = new Map();
+        for (const v of allVars) {
+          const p = v.product_id;
+          if (!p || !p.status) continue;
+          if (v.status === false) continue;
+          const pid = p._id || p;
+          if (!productMap.has(pid)) {
+            productMap.set(pid, { ...p, variants: [] });
+          }
+          productMap.get(pid).variants.push(v);
+        }
+
+        const filtered = [...productMap.values()]
           .filter((p) => {
             const pCatId = p.category_id?._id || p.category_id;
-            return p._id !== currentId && pCatId === categoryId;
+            return p._id !== currentId && String(pCatId) === String(categoryId);
           })
-          .slice(0, 4)
-          .map((p) => ({
-            ...p,
-            variants: vars.filter((v) => {
-              const vProdId = v.product_id?._id || v.product_id;
-              return vProdId === p._id;
-            }),
-          }));
+          .slice(0, 4);
         setRelated(filtered);
       } catch (err) {
         console.error(err);
@@ -639,6 +604,260 @@ function RelatedProducts({ currentId, categoryId }) {
       <div className="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
         {related.map((p) => (
           <ProductCard key={p._id} product={p} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReviewsList({ reviews, compact }) {
+  const [ratingFilter, setRatingFilter] = useState(0);
+  const avgRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        ).toFixed(1)
+      : 0;
+  const ratingCounts = [0, 0, 0, 0, 0];
+  reviews.forEach((r) => {
+    ratingCounts[r.rating - 1]++;
+  });
+
+  const filtered = ratingFilter
+    ? reviews.filter((r) => r.rating === ratingFilter)
+    : reviews;
+
+  function timeAgo(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (mins < 1) return "Vừa xong";
+    if (mins < 60) return `${mins} phút trước`;
+    if (hrs < 24) return `${hrs} giờ trước`;
+    if (days < 30) return `${days} ngày trước`;
+    if (days < 365) return `${Math.floor(days / 30)} tháng trước`;
+    return `${Math.floor(days / 365)} năm trước`;
+  }
+
+  return (
+    <div>
+      {!compact && reviews.length > 0 && (
+        <div
+          className="rounded-4 p-4 mb-4"
+          style={{
+            background:
+              "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+          }}
+        >
+          <div className="row align-items-center">
+            <div className="col-md-4 text-center mb-3 mb-md-0">
+              <div
+                className="display-3 fw-bold text-white mb-0"
+                style={{ lineHeight: 1 }}
+              >
+                {avgRating}
+              </div>
+              <div className="d-flex justify-content-center gap-1 my-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <i
+                    key={star}
+                    className={`bi ${star <= Math.round(avgRating) ? "bi-star-fill" : "bi-star"}`}
+                    style={{ color: "#ffc107", fontSize: "1.1rem" }}
+                  />
+                ))}
+              </div>
+              <small className="text-white-50">{reviews.length} đánh giá</small>
+            </div>
+            <div className="col-md-8">
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = ratingCounts[star - 1];
+                const pct =
+                  reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                const active = ratingFilter === star;
+                return (
+                  <div
+                    key={star}
+                    className="d-flex align-items-center gap-3 mb-2"
+                    style={{
+                      cursor: "pointer",
+                      opacity: ratingFilter && !active ? 0.4 : 1,
+                    }}
+                    onClick={() => setRatingFilter(active ? 0 : star)}
+                  >
+                    <small className="text-white-50" style={{ width: 16 }}>
+                      {star}
+                    </small>
+                    <i
+                      className="bi bi-star-fill text-warning"
+                      style={{ fontSize: "0.75rem" }}
+                    />
+                    <div
+                      className="flex-grow-1 rounded-pill overflow-hidden"
+                      style={{
+                        height: 6,
+                        background: "rgba(255,255,255,0.15)",
+                      }}
+                    >
+                      <div
+                        className="h-100 rounded-pill"
+                        style={{
+                          width: `${pct}%`,
+                          background: active
+                            ? "#ffc107"
+                            : "rgba(255,255,255,0.4)",
+                          transition: "width 0.8s ease",
+                        }}
+                      />
+                    </div>
+                    <small className="text-white-50" style={{ width: 24 }}>
+                      {count}
+                    </small>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {compact && reviews.length > 0 && (
+        <div className="d-flex align-items-center gap-2 mb-3">
+          <span className="fw-bold text-warning" style={{ fontSize: "1.1rem" }}>
+            {avgRating}
+          </span>
+          <div className="d-flex gap-0">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <i
+                key={star}
+                className={`bi ${star <= Math.round(avgRating) ? "bi-star-fill" : "bi-star"}`}
+                style={{
+                  color: star <= Math.round(avgRating) ? "#ffc107" : "#ddd",
+                  fontSize: "0.7rem",
+                }}
+              />
+            ))}
+          </div>
+          <small className="text-muted">({reviews.length})</small>
+          {ratingFilter > 0 && (
+            <button
+              className="btn btn-sm btn-outline-warning rounded-pill"
+              style={{ fontSize: "0.6rem", padding: "0 8px" }}
+              onClick={() => setRatingFilter(0)}
+            >
+              <i className="bi bi-x me-1"></i>
+              {ratingFilter} sao
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="d-flex flex-column gap-3">
+        {filtered.map((review) => (
+          <div
+            key={review._id}
+            className={`rounded-3 ${compact ? "p-2 bg-light" : "p-3 border"}`}
+            style={
+              compact
+                ? {}
+                : { borderColor: "#eee", transition: "all 0.2s ease" }
+            }
+          >
+            <div className="d-flex gap-3">
+              <div
+                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                style={{
+                  width: compact ? 32 : 40,
+                  height: compact ? 32 : 40,
+                  fontSize: compact ? "0.75rem" : "0.9rem",
+                  background: `linear-gradient(135deg, ${["#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#14b8a6", "#f59e0b"][review.user_id?.name?.charCodeAt(0) % 6]}, ${["#4f46e5", "#7c3aed", "#db2777", "#e11d48", "#0d9488", "#d97706"][review.user_id?.name?.charCodeAt(0) % 6]})`,
+                }}
+              >
+                {review.user_id?.name?.charAt(0)?.toUpperCase() || "U"}
+              </div>
+              <div className="flex-grow-1 min-w-0">
+                <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
+                  <span
+                    className="fw-semibold"
+                    style={{ fontSize: "0.875rem" }}
+                  >
+                    {review.user_id?.name || "Ẩn danh"}
+                  </span>
+                  <span
+                    className="badge rounded-pill"
+                    style={{
+                      background: "#e8f5e9",
+                      color: "#2e7d32",
+                      fontSize: "0.65rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <i className="bi bi-check2-circle me-1"></i>Đã mua hàng
+                  </span>
+                </div>
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <div className="d-flex gap-0">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <i
+                        key={star}
+                        className={`bi ${star <= review.rating ? "bi-star-fill" : "bi-star"}`}
+                        style={{
+                          color: star <= review.rating ? "#ffc107" : "#e0e0e0",
+                          fontSize: "0.7rem",
+                        }}
+                      />
+                    ))}
+                  </div>
+                  {review.product_variant_id?.color_id?.name && (
+                    <span
+                      className="badge bg-light text-dark border"
+                      style={{ fontSize: "0.65rem" }}
+                    >
+                      <span
+                        className="d-inline-block rounded-circle me-1"
+                        style={{
+                          width: 8,
+                          height: 8,
+                          background:
+                            review.product_variant_id.color_id.name === "Đen"
+                              ? "#000"
+                              : review.product_variant_id.color_id.name ===
+                                  "Trắng"
+                                ? "#ccc"
+                                : "#666",
+                          verticalAlign: "middle",
+                        }}
+                      ></span>
+                      {review.product_variant_id.color_id.name}
+                    </span>
+                  )}
+                  {review.product_variant_id?.size_id?.name && (
+                    <span
+                      className="badge bg-light text-dark border"
+                      style={{ fontSize: "0.65rem" }}
+                    >
+                      {review.product_variant_id.size_id.name}
+                    </span>
+                  )}
+                  <small className="text-muted" style={{ fontSize: "0.7rem" }}>
+                    {timeAgo(review.createdAt)}
+                  </small>
+                </div>
+                {review.content && (
+                  <p
+                    className="mt-2 mb-0"
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "#444",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {review.content}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     </div>

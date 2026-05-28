@@ -7,8 +7,10 @@ const menuItems = [
   { label: "Dashboard", href: "/admin", icon: "bi-speedometer2" },
   { label: "Products", href: "/admin/products", icon: "bi-box" },
   { label: "Categories", href: "/admin/categories", icon: "bi-grid" },
-  { label: "Variants", href: "/admin/variants", icon: "bi-stack" },
+  { label: "Orders", href: "/admin/orders", icon: "bi-cart-check" },
+  { label: "Reviews", href: "/admin/reviews", icon: "bi-star-fill" },
   { label: "Colors", href: "/admin/colors", icon: "bi-palette" },
+  { label: "Coupons", href: "/admin/coupons", icon: "bi-ticket-perforated" },
   {
     label: "Size Categories",
     href: "/admin/size-categories",
@@ -24,8 +26,8 @@ export default function Sidebar() {
 
   return (
     <div
-      className="d-flex flex-column flex-shrink-0 p-3 text-bg-dark"
-      style={{ width: 250, minHeight: "100vh" }}
+      className="d-flex flex-column flex-shrink-0 p-3 text-bg-dark position-fixed top-0 start-0 h-100 overflow-auto"
+      style={{ width: 250 }}
     >
       <Link
         href="/admin"

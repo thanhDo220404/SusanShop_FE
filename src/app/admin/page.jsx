@@ -11,22 +11,22 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [products, categories, users, variants, colors, media] =
+        const [products, categories, users, colors, media, reviews] =
           await Promise.all([
             api.products.getAll(),
             api.categories.getAll(),
             api.users.getAll(),
-            api.variants.getAll(),
             api.colors.getAll(),
             api.media.getAll(),
+            api.reviews.getAll(),
           ]);
         setStats({
           products: products.length,
           categories: categories.length,
           users: users.length,
-          variants: variants.length,
           colors: colors.length,
           media: media.length,
+          reviews: reviews.length,
         });
       } catch (err) {
         setError(err.message);
@@ -40,10 +40,10 @@ export default function Dashboard() {
   const cards = [
     { label: "Products", value: stats?.products, icon: "bi-box", color: "primary" },
     { label: "Categories", value: stats?.categories, icon: "bi-grid", color: "success" },
-    { label: "Variants", value: stats?.variants, icon: "bi-stack", color: "warning" },
     { label: "Users", value: stats?.users, icon: "bi-people", color: "info" },
     { label: "Colors", value: stats?.colors, icon: "bi-palette", color: "secondary" },
     { label: "Media", value: stats?.media, icon: "bi-images", color: "danger" },
+    { label: "Reviews", value: stats?.reviews, icon: "bi-star-fill", color: "warning" },
   ];
 
   if (loading) {

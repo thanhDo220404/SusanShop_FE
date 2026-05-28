@@ -32,7 +32,7 @@ export default function RootLayout({ children }) {
         <AdminGuard>
           <div className="d-flex">
             <Sidebar />
-            <main className="flex-grow-1 p-4" style={{ overflowX: "auto" }}>
+            <main className="flex-grow-1 p-4" style={{ overflowX: "auto", marginLeft: 250 }}>
               {children}
             </main>
           </div>

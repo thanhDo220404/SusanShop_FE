@@ -964,3 +964,10 @@ a{
   background: rgba(255, 255, 255, 0.08);
   transform: translateY(-2px);
 }
+
+.modal {
+  z-index: 1140 !important;
+}
+.modal-backdrop {
+  z-index: 1130 !important;
+}

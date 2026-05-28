@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -92,6 +93,7 @@ export default function RootLayout({ children }) {
           src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
           strategy="lazyOnload"
         />
+        <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
       </body>
     </html>
   );

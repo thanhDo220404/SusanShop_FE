@@ -32,17 +32,21 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [products, variants] = await Promise.all([
-          api.products.getAll(),
-          api.variants.getAll(),
-        ]);
-        const productsWithVariants = products.map((p) => ({
-          ...p,
-          variants: variants.filter((v) => {
-            const vProdId = v.product_id?._id || v.product_id;
-            return vProdId === p._id;
-          }),
-        }));
+        const variants = await api.variants.getAll();
+
+        const productMap = new Map();
+        for (const v of variants) {
+          const p = v.product_id;
+          if (!p || !p.status) continue;
+          if (v.status === false) continue;
+          const pid = p._id || p;
+          if (!productMap.has(pid)) {
+            productMap.set(pid, { ...p, variants: [] });
+          }
+          productMap.get(pid).variants.push(v);
+        }
+        const productsWithVariants = [...productMap.values()];
+
         setAllProducts(productsWithVariants);
         const featuredRaw = productsWithVariants.filter((p) => p.features);
         setFeatured(expandProductsByColor(featuredRaw));

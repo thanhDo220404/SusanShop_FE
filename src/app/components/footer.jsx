@@ -10,7 +10,9 @@ export default function Footer() {
     async function fetchCats() {
       try {
         const data = await api.categories.getAll();
-        setCategories(data.filter((c) => c.status && !c.parent_category_id).slice(0, 4));
+        setCategories(
+          data.filter((c) => c.status && !c.parent_category_id).slice(0, 4),
+        );
       } catch (err) {
         console.error(err);
       }
@@ -25,7 +27,7 @@ export default function Footer() {
         color: "#bbb",
       }}
     >
-      <div className="container py-5">
+      <div className="container-fluid px-lg-5 py-5">
         <div className="row g-4">
           <div className="col-lg-4">
             <Link
@@ -42,8 +44,9 @@ export default function Footer() {
               Susan
             </Link>
             <p className="mb-3" style={{ lineHeight: 1.8, maxWidth: 340 }}>
-              Cửa hàng thời trang cao cấp dành cho phái đẹp. Chúng tôi cam kết mang đến
-              những sản phẩm chất lượng, xu hướng mới nhất với giá cả hợp lý.
+              Cửa hàng thời trang cao cấp dành cho phái đẹp. Chúng tôi cam kết
+              mang đến những sản phẩm chất lượng, xu hướng mới nhất với giá cả
+              hợp lý.
             </p>
             <div className="d-flex gap-2 mt-3">
               <a href="#" className="footer-social-icon">
@@ -64,17 +67,19 @@ export default function Footer() {
           <div className="col-lg-2 col-md-4">
             <h6
               className="text-uppercase mb-3"
-              style={{ color: "#fff", fontSize: "0.8rem", letterSpacing: "1px", fontWeight: 700 }}
+              style={{
+                color: "#fff",
+                fontSize: "0.8rem",
+                letterSpacing: "1px",
+                fontWeight: 700,
+              }}
             >
               Danh mục
             </h6>
             <ul className="list-unstyled d-flex flex-column gap-2">
               {categories.map((cat) => (
                 <li key={cat._id}>
-                  <Link
-                    href={`/danh-muc/${cat.slug}`}
-                    className="footer-link"
-                  >
+                  <Link href={`/danh-muc/${cat.slug}`} className="footer-link">
                     {cat.name}
                   </Link>
                 </li>
@@ -90,7 +95,12 @@ export default function Footer() {
           <div className="col-lg-2 col-md-4">
             <h6
               className="text-uppercase mb-3"
-              style={{ color: "#fff", fontSize: "0.8rem", letterSpacing: "1px", fontWeight: 700 }}
+              style={{
+                color: "#fff",
+                fontSize: "0.8rem",
+                letterSpacing: "1px",
+                fontWeight: 700,
+              }}
             >
               Hỗ trợ
             </h6>
@@ -126,7 +136,12 @@ export default function Footer() {
           <div className="col-lg-2 col-md-4">
             <h6
               className="text-uppercase mb-3"
-              style={{ color: "#fff", fontSize: "0.8rem", letterSpacing: "1px", fontWeight: 700 }}
+              style={{
+                color: "#fff",
+                fontSize: "0.8rem",
+                letterSpacing: "1px",
+                fontWeight: 700,
+              }}
             >
               Về Susan
             </h6>
@@ -157,11 +172,19 @@ export default function Footer() {
           <div className="col-lg-2">
             <h6
               className="text-uppercase mb-3"
-              style={{ color: "#fff", fontSize: "0.8rem", letterSpacing: "1px", fontWeight: 700 }}
+              style={{
+                color: "#fff",
+                fontSize: "0.8rem",
+                letterSpacing: "1px",
+                fontWeight: 700,
+              }}
             >
               Liên hệ
             </h6>
-            <div className="d-flex flex-column gap-2" style={{ fontSize: "0.88rem" }}>
+            <div
+              className="d-flex flex-column gap-2"
+              style={{ fontSize: "0.88rem" }}
+            >
               <div className="d-flex align-items-center gap-2">
                 <i className="bi bi-telephone" style={{ color: "#0d6efd" }}></i>
                 <span>1900 9999 88</span>
@@ -171,23 +194,55 @@ export default function Footer() {
                 <span>support@susan.vn</span>
               </div>
               <div className="d-flex align-items-start gap-2">
-                <i className="bi bi-geo-alt mt-1" style={{ color: "#0d6efd" }}></i>
+                <i
+                  className="bi bi-geo-alt mt-1"
+                  style={{ color: "#0d6efd" }}
+                ></i>
                 <span>123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh</span>
               </div>
             </div>
           </div>
         </div>
 
-        <hr style={{ borderColor: "rgba(255,255,255,0.08)", margin: "40px 0 24px" }} />
+        <hr
+          style={{
+            borderColor: "rgba(255,255,255,0.08)",
+            margin: "40px 0 24px",
+          }}
+        />
 
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
           <small style={{ color: "#666" }}>
             © 2026 Susan Shop. Tất cả quyền được bảo lưu.
           </small>
           <div className="d-flex gap-3">
-            <span style={{ width: 40, height: 26, background: "#fff", borderRadius: 4, opacity: 0.3 }} />
-            <span style={{ width: 40, height: 26, background: "#fff", borderRadius: 4, opacity: 0.3 }} />
-            <span style={{ width: 40, height: 26, background: "#fff", borderRadius: 4, opacity: 0.3 }} />
+            <span
+              style={{
+                width: 40,
+                height: 26,
+                background: "#fff",
+                borderRadius: 4,
+                opacity: 0.3,
+              }}
+            />
+            <span
+              style={{
+                width: 40,
+                height: 26,
+                background: "#fff",
+                borderRadius: 4,
+                opacity: 0.3,
+              }}
+            />
+            <span
+              style={{
+                width: 40,
+                height: 26,
+                background: "#fff",
+                borderRadius: 4,
+                opacity: 0.3,
+              }}
+            />
           </div>
         </div>
       </div>

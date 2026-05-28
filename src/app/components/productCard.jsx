@@ -43,7 +43,7 @@ export default function ProductCard({ product }) {
     : product.name;
 
   return (
-    <div className="product-card col position-relative overflow-hidden">
+    <div className="product-card position-relative overflow-hidden">
       {product.features && <span className="best-seller">NỔI BẬT</span>}
 
       <div className="image-wrapper position-relative">
